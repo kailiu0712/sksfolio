@@ -1,0 +1,4 @@
+table,universe,rank,k,gamma_scale,regime,algorithm3_seconds,cplex_misoco_seconds,source_note
+7,sp500,50,10,1,unconstrained,0.01,0.54,integer model on paper hardware
+8,russell1000,50,10,1,unconstrained,0.02,7.77,integer model on paper hardware
+9,wilshire5000,100,10,1,unconstrained,0.04,15.07,integer model on paper hardware

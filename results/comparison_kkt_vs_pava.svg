@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640">
+<rect x="0" y="0" width="100%" height="100%" fill="#fffdf7"/>
+<text x="90" y="30" font-size="24" font-family="Segoe UI, sans-serif" fill="#1f1f1f">Projected KKT residual vs PAVA calls</text>
+<rect x="90" y="56" width="834" height="500" fill="#ffffff" stroke="#d9d4c7"/>
+<line x1="90.00" y1="56" x2="90.00" y2="556" stroke="#eee8da"/>
+<text x="90.00" y="582" text-anchor="middle" font-size="13" font-family="Consolas, monospace" fill="#545454">0.00</text>
+<line x1="90" y1="56.00" x2="924" y2="56.00" stroke="#eee8da"/>
+<text x="78" y="60.00" text-anchor="end" font-size="13" font-family="Consolas, monospace" fill="#545454">2.6e-01</text>
+<line x1="256.80" y1="56" x2="256.80" y2="556" stroke="#eee8da"/>
+<text x="256.80" y="582" text-anchor="middle" font-size="13" font-family="Consolas, monospace" fill="#545454">16.38</text>
+<line x1="90" y1="156.00" x2="924" y2="156.00" stroke="#eee8da"/>
+<text x="78" y="160.00" text-anchor="end" font-size="13" font-family="Consolas, monospace" fill="#545454">2.5e-04</text>
+<line x1="423.60" y1="56" x2="423.60" y2="556" stroke="#eee8da"/>
+<text x="423.60" y="582" text-anchor="middle" font-size="13" font-family="Consolas, monospace" fill="#545454">32.76</text>
+<line x1="90" y1="256.00" x2="924" y2="256.00" stroke="#eee8da"/>
+<text x="78" y="260.00" text-anchor="end" font-size="13" font-family="Consolas, monospace" fill="#545454">2.4e-07</text>
+<line x1="590.40" y1="56" x2="590.40" y2="556" stroke="#eee8da"/>
+<text x="590.40" y="582" text-anchor="middle" font-size="13" font-family="Consolas, monospace" fill="#545454">49.14</text>
+<line x1="90" y1="356.00" x2="924" y2="356.00" stroke="#eee8da"/>
+<text x="78" y="360.00" text-anchor="end" font-size="13" font-family="Consolas, monospace" fill="#545454">2.4e-10</text>
+<line x1="757.20" y1="56" x2="757.20" y2="556" stroke="#eee8da"/>
+<text x="757.20" y="582" text-anchor="middle" font-size="13" font-family="Consolas, monospace" fill="#545454">65.52</text>
+<line x1="90" y1="456.00" x2="924" y2="456.00" stroke="#eee8da"/>
+<text x="78" y="460.00" text-anchor="end" font-size="13" font-family="Consolas, monospace" fill="#545454">2.3e-13</text>
+<line x1="924.00" y1="56" x2="924.00" y2="556" stroke="#eee8da"/>
+<text x="924.00" y="582" text-anchor="middle" font-size="13" font-family="Consolas, monospace" fill="#545454">81.90</text>
+<line x1="90" y1="556.00" x2="924" y2="556.00" stroke="#eee8da"/>
+<text x="78" y="560.00" text-anchor="end" font-size="13" font-family="Consolas, monospace" fill="#545454">2.2e-16</text>
+<polyline fill="none" stroke="#0b6e4f" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="354.76,178.65 619.52,287.12 884.29,397.65"/>
+<polyline fill="none" stroke="#c84c09" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="100.18,56.00 120.55,69.59 140.92,152.39 161.28,556.00"/>
+<line x1="106" y1="74" x2="134" y2="74" stroke="#0b6e4f" stroke-width="4" stroke-linecap="round"/>
+<text x="142" y="78" font-size="14" font-family="Segoe UI, sans-serif" fill="#1f1f1f">Restarted FISTA</text>
+<line x1="106" y1="98" x2="134" y2="98" stroke="#c84c09" stroke-width="4" stroke-linecap="round"/>
+<text x="142" y="102" font-size="14" font-family="Segoe UI, sans-serif" fill="#1f1f1f">Semismooth Newton</text>
+<line x1="106" y1="122" x2="134" y2="122" stroke="#2458b3" stroke-width="4" stroke-linecap="round"/>
+<text x="142" y="126" font-size="14" font-family="Segoe UI, sans-serif" fill="#1f1f1f">Gurobi</text>
+<text x="507.00" y="616" text-anchor="middle" font-size="16" font-family="Segoe UI, sans-serif" fill="#333333">PAVA calls</text>
+<text x="28" y="306.00" text-anchor="middle" font-size="16" font-family="Segoe UI, sans-serif" fill="#333333" transform="rotate(-90 28 306.00)">projected KKT residual</text>
+</svg>

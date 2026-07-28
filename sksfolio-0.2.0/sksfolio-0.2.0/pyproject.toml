@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sksfolio"
+dynamic = ["version"]
+description = "Sparse k-support portfolio relaxations with safe dual bounds"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "threadpoolctl>=3.1",
+]
+
+[project.optional-dependencies]
+gurobi = ["gurobipy>=11"]
+mosek = ["Mosek>=10"]
+qp = ["osqp>=1.0"]
+julia = ["juliacall>=0.9", "juliapkg>=0.1"]
+commercial = [
+  "gurobipy>=11",
+  "Mosek>=10",
+  "juliacall>=0.9",
+  "juliapkg>=0.1",
+]
+test = ["pytest>=8"]
+
+[project.scripts]
+sksfolio-bcw = "sksfolio.benchmarks.run_relaxations:main"
+sksfolio-four-prox = "sksfolio.benchmarks.run_four_prox_variants:main"
+sksfolio-many-constraints = "sksfolio.benchmarks.run_many_constraints:main"
+sksfolio-prox-native = "sksfolio.benchmarks.run_prox_native_comparison:main"
+sksfolio-fista-restarts = "sksfolio.benchmarks.run_fista_restarts:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sksfolio*"]
+exclude = ["outputs*", "tests*", "benchmarks*"]
+
+[tool.setuptools.package-data]
+"sksfolio.relaxation" = [
+  "_julia/*.jl",
+  "_julia/*.toml",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "sksfolio._version.__version__"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "commercial: requires a commercial solver and a valid license",
+  "julia: requires Julia and the corresponding JuMP package",
+  "numerical: numerical regression rather than a pure unit test",
+]

@@ -1,0 +1,17 @@
+include README.md
+include pyproject.toml
+include setup.py
+recursive-include sksfolio *.py *.c *.jl *.toml
+recursive-include tests *.py
+recursive-include benchmarks *.py *.md *.csv
+global-exclude *.py[cod]
+global-exclude *.so
+global-exclude *.dylib
+global-exclude *.dll
+global-exclude .DS_Store
+prune build
+prune dist
+prune output
+prune outputs
+prune tmp
+prune work

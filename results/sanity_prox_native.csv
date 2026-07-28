@@ -1,0 +1,3 @@
+solver,repetition,status,build_seconds,solve_seconds,total_seconds,iterations,pava_calls,constraint_violation,maximum_error_to_gurobi
+dual_fista_python_pava,1,converged,0.013605899992398918,0.11059490009211004,0.11059490009211004,53,127,1.3741235038722266e-08,
+dual_fista_native_pava,1,converged,0.008258100016973913,0.025020599947310984,0.025020599947310984,53,127,1.3741242366194228e-08,

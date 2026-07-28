@@ -1,0 +1,436 @@
+# sksfolio
+
+`sksfolio` means **sparse k-support portfolio optimization**.  The name is
+short, describes the regularizer, and the import is simply:
+
+```python
+import sksfolio
+```
+
+The package solves the continuous long-only perspective relaxation
+
+```text
+minimize    0.5 ||B' x||^2 + omega g_k(x) - rho mu' x
+subject to  lower <= C x <= upper
+```
+
+where
+
+```text
+g_k(x) = min 0.5 sum_i x_i^2 / z_i
+         s.t. 0 <= x_i <= z_i <= 1, sum_i z_i <= k.
+```
+
+The budget equality `1' x = 1`, minimum return, sector bands, factor
+exposures, and stress limits are rows of `C`; equal lower and upper bounds
+encode equalities.
+
+## Installation
+
+Install the first-order package from the source directory with:
+
+```bash
+python -m pip install .
+```
+
+Gurobi and MOSEK remain optional because their packages and licenses are
+commercial:
+
+```bash
+python -m pip install ".[gurobi]"
+python -m pip install ".[mosek]"
+python -m pip install ".[commercial]"  # both solvers and Julia wrappers
+```
+
+## Layout
+
+```text
+sksfolio/
+  relaxation/
+    pdhg/
+      solver.py
+      safe_dual.py
+      pava/
+        full_sort.py
+        partial_sort.py
+    fista/
+      solver.py
+      budget_prox.py
+      linear_prox.py
+      majorization_qp.py
+    gurobi/
+      python.py
+      julia.py
+    mosek/
+      python.py
+      julia.py
+    certificate.py
+    problem.py
+    result.py
+  benchmarks/
+    bertsimas_cory_wright.py
+    instance_generator.py
+    run_relaxations.py
+tests/
+  unit/
+  numerical/
+  integration/
+benchmarks/
+  bertsimas_cory_wright_2022/
+```
+
+“Python” means a solver's native Python API; it is not a naive reference
+implementation. The four primary backend names are:
+
+```text
+fista
+pdhg
+gurobi
+mosek
+```
+
+`gurobi` and `mosek` select the native Python APIs. The explicit
+`gurobi.python`, `gurobi.julia`, `mosek.python`, and `mosek.julia` names
+remain available when the wrapper language must be selected.
+
+## Recommended default
+
+Calling `solve_relaxation` without a backend uses the fastest robust
+configuration from the included matched benchmarks:
+
+```python
+from sksfolio import solve_relaxation
+
+result = solve_relaxation(problem)
+```
+
+This selects line-search FISTA, automatic proximal-oracle dispatch,
+partial-sort PAVA, and gradient restart. The automatic oracle uses plain
+PAVA with no rows, scalar Brent/PAVA for the budget equality, and
+warm-started dual FISTA for general interval rows. The selected defaults are
+also exported as `DEFAULT_BACKEND`, `DEFAULT_PAVA`,
+`DEFAULT_FISTA_RESTART`, `DEFAULT_FISTA_PROX_ORACLE`, and
+`DEFAULT_PDHG_VARIANT`.
+
+The default was selected for end-to-end relaxation time, not just proximal
+time. On the recorded `d = 499, 958, 3162, 4999` benchmark, FISTA was faster
+than PDHG and Gurobi for both the single-budget row and the matched 261-row
+constraint stack. Every first-order backend still returns a recomputable
+safe dual certificate.
+
+## PDHG
+
+```python
+from sksfolio.relaxation import PerspectiveRelaxation
+
+estimator = PerspectiveRelaxation(
+    backend="pdhg",
+    variant="metric-linesearch-restart",
+    pava="partial_sort",
+    solver_params={
+        "tolerance": 1e-6,
+        "threads": 1,
+    },
+)
+estimator.fit(problem)
+
+print(estimator.weights_)
+print(estimator.result_.safe_dual_bound)
+print(estimator.result_.dual_certificate.verify(problem))
+```
+
+Five variants are included: `fixed`, `fixed-restart`, `linesearch`,
+`linesearch-restart`, and `metric-linesearch-restart`.  Every variant can
+use either PAVA implementation.
+
+PDHG row-normalizes the interval constraints and automatically chooses the
+matrix representation used in its repeated products. A moderate matrix with
+at least 20 percent nonzeros uses dense BLAS; genuinely sparse or oversized
+matrices retain CSR storage. The result diagnostics record the selected
+storage, density, entry count, and nonzero count.
+
+- `full_sort` is the readable complete-sort reference, with
+  `O(d log d)` sorting cost.
+- `partial_sort` uses top-k selection and finite breakpoint pruning. It
+  avoids sorting all `d` entries and is the default for large problems.
+  A compiled C kernel is built automatically when a C compiler is available;
+  otherwise the same public function falls back to the NumPy reference.
+  The native selector costs `O(d log k)`, which is particularly effective
+  for sparse portfolios with `k << d`.
+
+Both proximal implementations are finite PAVA/breakpoint algorithms.  The
+proximal path contains no active-set Newton method, scalar Newton step,
+bisection, or linear-system solve.
+
+To compare the compiled and reference implementations in separate Python
+processes, set `SKSFOLIO_DISABLE_NATIVE_PAVA=1` for the reference run. The
+functions `native_partial_sort_available()` and
+`native_partial_sort_enabled()` report which path is active.
+
+```python
+from sksfolio.relaxation.pdhg.pava import (
+    native_partial_sort_enabled,
+    prox_partial_sort,
+)
+
+x = prox_partial_sort(v, gamma, k)
+print(native_partial_sort_enabled())
+```
+
+Installing from source with `pip install -e .` builds the optional extension.
+The package remains usable with the NumPy fallback when no C compiler is
+available. The same kernel is used by plain PAVA, PDHG, general dual FISTA,
+and the partial-sort evaluations inside the scalar budget oracle. Reproduce
+the direct constrained-prox comparison with:
+
+```bash
+python -m sksfolio.benchmarks.run_prox_native_comparison \
+    --output output/benchmark/prox_native_vs_gurobi.csv
+```
+
+At every checkpoint, PDHG evaluates a Fenchel weak-duality lower bound.  The
+saved multipliers can be independently recomputed:
+
+```python
+certificate = estimator.result_.dual_certificate
+assert certificate.verify(problem)
+```
+
+The bound is mathematically safe in exact arithmetic.  Standard floating
+point evaluation is not an outward-rounded interval certificate, and the
+result object states this explicitly.
+
+## FISTA and four proximal paths
+
+The `fista` backend uses backtracking with interchangeable outer-restart
+rules, with the linear rows kept inside the proximal operator. Set
+`prox_oracle="auto"` to select the fastest applicable proximal path:
+
+1. `pava` computes `prox_{gamma G_k}` when there are no linear rows.
+2. `budget` handles exactly `1' x = 1` by scalar Brent/PAVA.
+3. `dual_fista` handles arbitrary `lower <= C x <= upper`.
+4. `majorization_qp` uses the exact weak-majorization QP lift and OSQP.
+
+For the budget path,
+
+```text
+prox_{gamma G_k + delta_{1' x = 1}}(v)
+    = prox_{gamma G_k}(v - eta 1),
+```
+
+where the single scalar `eta` is selected so that the returned point sums to
+one. A uniform shift does not change the ordering, so the complete sort or
+top-k partition is performed only once during each budget-prox call. The
+default scalar solver is bracketed Brent interpolation with bisection as a
+safeguard. Its scalar multiplier is warm-started from the preceding outer
+iteration.
+
+For general interval rows, the code row-normalizes `C` and solves the
+`rows(C)`-dimensional Fenchel dual. If
+
+```text
+h(x) = 0.5 ||x - v||^2 + gamma G_k(x),
+```
+
+then the dual smooth gradient at `y` is
+
+```text
+-C prox_{gamma G_k}(v - C' y),
+```
+
+and the nonsmooth support-function step is
+
+```text
+prox_{alpha sigma_[lower,upper]}(w)
+    = w - alpha projection_[lower,upper](w / alpha).
+```
+
+The implementation is warm-started, uses adaptive restart and a
+local-curvature line search, and returns the multiplier in the original
+unscaled row coordinates. The oracle automatically uses dense BLAS products
+when a moderate-size `C` is at least 20 percent dense; otherwise it retains
+sparse CSR/CSC products. This avoids sparse-indexing overhead for dense
+sector, style, and stress stacks without materializing very large matrices.
+
+The fourth path uses the exact long-only weak-majorization identity
+
+```text
+G_k(x) = min 0.5 ||w||^2
+         s.t. 1 >= w_1 >= ... >= w_k >= 0,
+              (w, 0) weakly majorizes x.
+```
+
+For `j < k`, each top-sum constraint is linearized with
+
+```text
+T_j(x) = min j theta_j + sum_i s_ji
+         s.t. s_ji >= x_i - theta_j, s_ji >= 0.
+```
+
+This produces an exact sparse QP with `d k + 2 k - 1` variables. It is useful
+as an independent formulation and can reuse OSQP's factorization and warm
+start, but its `O(d k)` memory makes it less attractive than PAVA at large
+`d` or `k`. Install it with `pip install -e '.[qp]'`.
+
+```python
+from sksfolio.relaxation import solve_relaxation
+
+result = solve_relaxation(
+    problem,
+    backend="fista",
+    pava="partial_sort",
+    options={
+        "tolerance": 1e-6,
+        "restart_strategy": "gradient",
+        "prox_oracle": "auto",
+        "threads": 1,
+    },
+)
+```
+
+The outer `restart_strategy` choices are:
+
+- `none`;
+- `gradient`, the O'Donoghue--Candès generalized-gradient test and the
+  backward-compatible default for `adaptive_restart=True`;
+- `function`, the O'Donoghue--Candès composite-objective test;
+- `periodic`, with `restart_period`;
+- `hinder_lubin`, with distance-potential parameter
+  `restart_hinder_lubin_beta`;
+- `primal_dual_gap`, which restarts once the current paired safe gap is at
+  most its epoch-start value divided by `restart_eta`.
+
+The primal--dual implementation uses the current primal/current dual pair for
+the restart trigger and separately retains the best safe lower bound for
+branch-and-bound. The default `restart_eta=exp(2)` is the rate-model choice
+for an `O(1 / t^2)` base method; benchmark sweeps also include `exp(1)` and
+`exp(3)`. For the observed-gap rule, Q-linear gap contraction additionally
+uses the paper's singleton dual-subdifferential condition; without it the
+rule is a practical adaptive trigger, while the theorem-backed general
+alternative is periodic restart with R-linear convergence under quadratic
+growth. The exact-prox assumption holds directly on the budget Brent/PAVA
+path. With general rows, the inner dual FISTA is inexact, so function- and
+gap-based triggers are gated on outer feasibility and are reported as
+empirical inexact-prox variants; their returned dual lower bounds remain
+safe.
+
+Every path returns a constraint multiplier, so FISTA includes the same
+independently recomputable safe Fenchel lower-bound certificate used by
+PDHG—even when the prox is approximate. If the scalar search uses `E` PAVA
+evaluations, one budget prox costs `O(d log d + E d)` with complete sorting
+and expected `O(d + E d)` with partial sorting, using `O(d)` memory. A
+general dual-FISTA inner iteration costs
+`O(nnz(C) + PAVA(d,k))` and uses an `O(rows(C))` dual vector.
+
+The linear-time top-k-sum projection method of
+[Roth and Cui](https://arxiv.org/pdf/2310.07224) is relevant to a future
+cut/projection implementation of the majorization model. It is not a direct
+replacement here: weak majorization contains all nested top-`j` inequalities
+with variable right-hand sides, while their oracle handles one fixed
+top-k-sum sublevel constraint.
+
+## Commercial backends
+
+```python
+from sksfolio.relaxation import solve_relaxation
+
+gurobi_result = solve_relaxation(problem, "gurobi")
+mosek_result = solve_relaxation(problem, "mosek")
+
+# The Julia/JuMP wrappers are still available explicitly.
+mosek_result = solve_relaxation(
+    problem,
+    "mosek.julia",
+    options={"julia_instantiate": True},
+)
+```
+
+Commercial packages and Julia are imported lazily.  MOSEK code is included
+but its license-dependent solve is not required by the default test suite.
+Use `julia_instantiate=True` on the first Julia call to install the pinned
+JuMP environment; omit it on later calls.
+
+When a commercial backend returns a portfolio, `sksfolio` also constructs a
+recomputable Fenchel certificate, using the factor exposure and a zero
+linear-row multiplier. This makes `result.safe_dual_bound` available with
+the same exact-arithmetic safety semantics as the first-order backends,
+although it can be loose. A commercial solver's own numerical bound is kept
+separately as `result.solver_objective_bound`; it is never relabeled as the
+recomputable certificate.
+
+For fair timing, `wrapper_seconds` and `end_to_end_seconds` include public
+diagnostics and certificate construction. `backend_call_seconds` isolates
+the solver call, and `api_postprocess_seconds` reports the difference.
+
+## Bertsimas--Cory-Wright benchmark
+
+The benchmark manifest contains all 30 OR-Library and 192 large-universe
+parameter combinations used in
+[the paper](https://arxiv.org/pdf/1811.00138).  The included generator
+matches the large-universe dimensions, factor ranks, `k` values,
+`gamma in {1 / sqrt(n), 100 / sqrt(n)}`, and the two return regimes.
+
+The paper solves a binary cardinality problem, whereas `sksfolio` solves its
+continuous perspective relaxation.  Therefore published integer runtimes are
+stored only as context and are never used as expected runtime or objective
+values.
+
+Run default FISTA, all PDHG variants, both PAVA methods, and native Gurobi
+on the default S&P-shaped case with:
+
+```bash
+sksfolio-bcw --output results/sp500_rank50_k10.csv
+```
+
+Run the PAVA/PDHG path, budget Brent/PAVA when applicable, general dual
+FISTA, the majorization QP, and native Gurobi with:
+
+```bash
+sksfolio-four-prox --output results/four_prox.csv
+```
+
+Use `--regime constrained` to add the minimum-return row. The budget oracle
+is then correctly omitted because it is not applicable; the general dual and
+majorization paths remain in the comparison.
+
+The default BCW profile intentionally contains only the paper rows. To test
+the genuinely general linear-constraint case, run:
+
+```bash
+sksfolio-many-constraints \
+  --time-limit 60 \
+  --output results/many_constraints.csv
+```
+
+This constrained profile gives the same matrix to every solver and contains
+262 rows: full investment, minimum return, 20 sector bands, 40 style-factor
+bands, and 200 one-sided scenario-loss limits. Use
+`--constraint-profile standard` for the earlier 45-row
+20-sector/8-style/15-stress model, or override the three row counts directly.
+
+Run the matched outer-restart study for line-search FISTA with:
+
+```bash
+python -m sksfolio.benchmarks.run_fista_restarts \
+  --dimensions 499 958 3162 \
+  --profiles bcw many \
+  --repeats 3 \
+  --output-prefix output/benchmark/fista_restart_comparison
+```
+
+This writes raw runs, aggregates, complete checkpoint histories,
+time-to-safe-bound targets, and a convergence figure. It reports every
+tested rule: no restart,
+O'Donoghue--Candès gradient and function restarts, Hinder--Lubin,
+periodic periods `5, 10, 20, 50, 100`, and primal--dual gap factors
+`eta = e, e^2, e^3`. Variant order is shuffled deterministically after an
+unrecorded warmup, so compilation and first-call costs do not favor the
+first listed rule.
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Commercial tests skip cleanly when a package, runtime, or license is absent.
