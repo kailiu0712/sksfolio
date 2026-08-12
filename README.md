@@ -25,7 +25,7 @@ The budget equality `1' x = 1`, minimum return, sector bands, style
 exposures, and one-sided stress limits are rows of `C`; equal lower and upper
 bounds encode equalities.
 
-## What students can run
+## What can run
 
 The public API exposes each layer separately, so experiments do not need to
 modify solver internals:
