@@ -48,6 +48,7 @@ from ..incumbent import (
 )
 from ..relaxation import solve_relaxation
 from ..relaxation.fista import LinearConstraintProx
+from .bertsimas_cory_wright import CONSTRAINT_PROFILES
 from .instance_generator import factor_operator_norm_squared, generate_instance
 
 
@@ -77,9 +78,8 @@ DEFAULT_DIMENSIONS = (
     4000,
     5000,
 )
-DEFAULT_PLOT = Path("benchmarks/four_scaling_six_panel.svg")
-DEFAULT_RESULTS = Path("benchmarks/four_scaling_results.csv")
 DEFAULT_SEED_COUNT = 10
+BCW_STANDARD_PROFILE = dict(CONSTRAINT_PROFILES["standard"])
 
 
 def _workspace_root() -> Path:
@@ -90,16 +90,56 @@ def _repository_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def _bootstrap_commercial_environment() -> dict[str, Any]:
+def _results_root() -> Path:
+    return _workspace_root() / "proximal" / "code0808" / "results"
+
+
+def _default_result_path(filename: str) -> Path:
+    return _results_root() / filename
+
+
+DEFAULT_PLOT = _default_result_path("four_scaling_six_panel.svg")
+DEFAULT_RESULTS = _default_result_path("four_scaling_results.csv")
+
+
+def _bootstrap_commercial_environment(
+    gurobi_license_mode: str = "file",
+) -> dict[str, Any]:
     root = _workspace_root()
     info: dict[str, Any] = {}
 
     gurobi_license = root / "gurobi.lic"
-    if gurobi_license.exists() and "GRB_LICENSE_FILE" not in os.environ:
+    mode = str(gurobi_license_mode).strip().lower()
+    if mode not in {"auto", "default", "file"}:
+        raise ValueError("gurobi_license_mode must be auto, default, or file")
+    if mode == "file":
+        if not gurobi_license.exists():
+            raise FileNotFoundError(f"Gurobi license file not found: {gurobi_license}")
         os.environ["GRB_LICENSE_FILE"] = str(gurobi_license)
         info["gurobi_license"] = str(gurobi_license)
-    else:
+    elif mode == "default":
+        os.environ.pop("GRB_LICENSE_FILE", None)
+        info["gurobi_license"] = "default"
+    elif "GRB_LICENSE_FILE" in os.environ:
         info["gurobi_license"] = os.environ.get("GRB_LICENSE_FILE")
+    else:
+        default_gurobi_ok = False
+        try:
+            import gurobipy as gp
+
+            model = gp.Model()
+            model.Params.OutputFlag = 0
+            model.dispose()
+            default_gurobi_ok = True
+        except Exception:
+            default_gurobi_ok = False
+        if default_gurobi_ok:
+            info["gurobi_license"] = "default"
+        elif gurobi_license.exists():
+            os.environ["GRB_LICENSE_FILE"] = str(gurobi_license)
+            info["gurobi_license"] = str(gurobi_license)
+        else:
+            info["gurobi_license"] = None
 
     mosek_license = root / "mosek.lic"
     if mosek_license.exists() and "MOSEKLM_LICENSE_FILE" not in os.environ:
@@ -151,13 +191,14 @@ SCENARIOS: tuple[tuple[str, Callable[[int], int]], ...] = (
 
 
 def _rank_for_dimension(dimension: int, cap: int) -> int:
-    return min(cap, max(2, dimension // 2))
+    paper_rank = 50 if dimension <= 1_000 else 100
+    return min(dimension - 1, max(2, min(cap, paper_rank)))
 
 
 def _constraint_counts(dimension: int) -> tuple[int, int, int]:
-    sectors = min(10, max(2, dimension // 2))
-    styles = min(4, max(1, dimension // 5))
-    stresses = min(4, max(1, dimension // 5))
+    sectors = min(20, max(2, int(round(dimension / 50.0))))
+    styles = min(8, max(1, int(round(dimension / 125.0))))
+    stresses = min(15, max(1, int(round(dimension / 67.0))))
     return sectors, styles, stresses
 
 
@@ -174,16 +215,16 @@ def _build_instance(
         rank=rank,
         k=k,
         gamma_scale=100.0,
-        regime="hybrid",
+        regime="unconstrained",
         seed=seed,
         sectors=sectors,
         style_factors=styles,
         stress_constraints=stresses,
-        target_fraction=0.0,
+        target_fraction=0.3,
         target_iterations=200,
-        sector_band=1.0,
-        style_band=4.0,
-        stress_band=4.0,
+        sector_band=float(BCW_STANDARD_PROFILE["sector_band"]),
+        style_band=float(BCW_STANDARD_PROFILE["style_band"]),
+        stress_band=float(BCW_STANDARD_PROFILE["stress_band"]),
         annual_volatility=0.20,
         common_correlation=0.15,
     )
@@ -509,6 +550,7 @@ def _solve_bnb_run(
             time_limit=args.exact_time_limit,
             options={
                 "verbose": False,
+                "polish_incumbent": False,
                 "Threads": args.threads,
                 "MIPFocus": 0,
                 "MIPGap": args.bnb_relative_gap,
@@ -570,6 +612,9 @@ def _existing_rows(
         reader = csv.DictReader(stream)
         rows = {}
         for row in reader:
+            status = str(row.get("status", "")).strip().lower()
+            if status in {"error", "unavailable"}:
+                continue
             key = (
                 str(row["scenario"]),
                 str(row["experiment"]),
@@ -819,6 +864,16 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--rank-cap", type=int, default=50)
     result.add_argument("--threads", type=int, default=1)
     result.add_argument(
+        "--gurobi-license-mode",
+        choices=("auto", "default", "file"),
+        default="file",
+        help=(
+            "Gurobi license selection: auto prefers the interpreter's default "
+            "license and falls back to gurobi.lic; default forces the "
+            "interpreter default; file forces gurobi.lic"
+        ),
+    )
+    result.add_argument(
         "--output",
         type=Path,
         default=DEFAULT_RESULTS,
@@ -874,7 +929,7 @@ def parser() -> argparse.ArgumentParser:
 
 def main(arguments: Optional[Sequence[str]] = None) -> None:
     args = parser().parse_args(arguments)
-    env_info = _bootstrap_commercial_environment()
+    env_info = _bootstrap_commercial_environment(args.gurobi_license_mode)
 
     print("Four-scaling benchmark")
     print(f"Workspace root: {_workspace_root()}")

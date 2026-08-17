@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: sksfolio
 Version: 0.9.0
 Summary: Sparse k-support portfolio relaxations with safe dual bounds
