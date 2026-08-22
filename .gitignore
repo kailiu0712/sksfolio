@@ -1,0 +1,37 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+*.so
+*.dll
+*.dylib
+
+# Proofs and research-only material are intentionally not published
+/docs/
+/verification/
+CONVERGENCE_PROOF.md
+need to prove.pdf
+experiment benchmark.pdf
+/AutoOPT-main/
+
+# Historical baselines and large/local datasets
+/benchmarks/
+/real data test/
+/tools/
+sksfolio/benchmarks/wilshire5000_data.py
+
+# Solver and editor scratch files
+*.log
+*.aux
+*.out
+*.toc
+.DS_Store
+.idea/
+.vscode/
