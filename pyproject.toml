@@ -16,56 +16,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-gurobi = ["gurobipy>=11"]
-mosek = ["Mosek>=10"]
-qp = []
-julia = ["juliacall>=0.9", "juliapkg>=0.1"]
-commercial = [
-  "gurobipy>=11",
-  "Mosek>=10",
-  "juliacall>=0.9",
-  "juliapkg>=0.1",
-]
 test = ["pytest>=8"]
 native-dev = ["Cython==3.1.3"]
-real-data = [
-  "yfinance>=0.2",
-  "pandas>=2.0",
-  "pyarrow>=14",
-  "requests>=2.31",
-  "lxml>=5.0",
-  "tqdm>=4.60",
-]
 
 [project.scripts]
-sksfolio-bcw = "sksfolio.benchmarks.run_relaxations:main"
-sksfolio-four-prox = "sksfolio.benchmarks.run_four_prox_variants:main"
-sksfolio-many-constraints = "sksfolio.benchmarks.run_many_constraints:main"
-sksfolio-prox-native = "sksfolio.benchmarks.run_prox_native_comparison:main"
-sksfolio-fista-restarts = "sksfolio.benchmarks.run_fista_restarts:main"
-sksfolio-lbfgs-comparison = "sksfolio.benchmarks.run_lbfgs_comparison:main"
-sksfolio-incumbents = "sksfolio.benchmarks.run_incumbents:main"
 sksfolio-bnb = "sksfolio.benchmarks.run_bnb:main"
-sksfolio-student-benchmark = "sksfolio.benchmarks.run_student_suite:main"
+sksfolio-corrected-benchmark = "sksfolio.benchmarks.run_corrected_algorithms:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["sksfolio*"]
 exclude = ["outputs*", "tests*", "benchmarks*"]
 
-[tool.setuptools.package-data]
-"sksfolio.relaxation" = [
-  "_julia/*.jl",
-  "_julia/*.toml",
-]
-
 [tool.setuptools.dynamic]
 version = {attr = "sksfolio._version.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = [
-  "commercial: requires a commercial solver and a valid license",
-  "julia: requires Julia and the corresponding JuMP package",
-  "numerical: numerical regression rather than a pure unit test",
-]
+markers = ["numerical: numerical regression rather than a pure unit test"]

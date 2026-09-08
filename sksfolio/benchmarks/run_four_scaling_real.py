@@ -36,50 +36,134 @@ import argparse
 import csv
 import math
 from pathlib import Path
+import sys
 from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 from tqdm.auto import tqdm
 
-from .instance_generator import generate_instance
-from .run_four_scaling import (
-    BCW_STANDARD_PROFILE,
-    EXPERIMENTS,
-    METHODS,
-    SCENARIOS,
-    _commercial_solver,
-    _default_result_path,
-    _aggregate_rows,
-    _bootstrap_commercial_environment,
-    _constraint_counts,
-    _existing_rows,
-    _fista_relaxation_options,
-    _plot,
-    _prox_instance,
-    _prox_problem_data,
-    _rank_for_dimension,
-    _repository_root,
-    _row_base,
-    _seed_values,
-    _solve_bnb_run,
-    _solve_prox,
-    _solve_relaxation_run,
-    _workspace_root,
-    _write_rows,
-    _write_summary_rows,
-    parser as _synthetic_parser,
-)
-from ..relaxation import evaluate_solution, perspective_value, solve_relaxation
-from ..relaxation.fista import LinearConstraintProx
-from .wilshire5000_data import DEFAULT_OUTPUT_DIR as DEFAULT_DATASET_DIR
-from .wilshire5000_data import RealDataset, TIER_NAMES, load_dataset
+if __package__ in {None, ""}:
+    _PACKAGE_ROOT = Path(__file__).resolve().parents[2]
+    if str(_PACKAGE_ROOT) not in sys.path:
+        sys.path.insert(0, str(_PACKAGE_ROOT))
+    from sksfolio.benchmarks.instance_generator import generate_instance
+    from sksfolio.benchmarks.run_four_scaling import (
+        BCW_STANDARD_PROFILE,
+        _aggregate_rows,
+        _archive_previous_results,
+        _atomic_write,
+        _bootstrap_commercial_environment,
+        _commercial_solver,
+        _constraint_counts,
+        _corrected_relaxation_backend,
+        _default_result_path,
+        _resume_rows,
+        _experiment_dimensions,
+        _experiment_seeds,
+        _fista_relaxation_options,
+        _plot,
+        _precision_plot,
+        _prox_instance,
+        _prox_problem_data,
+        _rank_for_dimension,
+        _repository_root,
+        _row_base,
+        _seed_values,
+        _solve_bnb_run,
+        _solve_prox,
+        _solve_relaxation_run,
+        _workspace_root,
+        _write_rows,
+        _write_summary_rows,
+        EXPERIMENTS,
+        METHODS,
+        SCENARIOS,
+        parser as _synthetic_parser,
+    )
+    from sksfolio.relaxation import (
+        evaluate_solution,
+        perspective_value,
+        solve_relaxation,
+    )
+    from sksfolio.relaxation.fista import LinearConstraintProx
+    from sksfolio.benchmarks.wilshire5000_data import (
+        DEFAULT_OUTPUT_DIR as DEFAULT_DATASET_DIR,
+    )
+    from sksfolio.benchmarks.wilshire5000_data import (
+        RealDataset,
+        TIER_NAMES,
+        load_dataset,
+    )
+else:
+    from .instance_generator import generate_instance
+    from .run_four_scaling import (
+        BCW_STANDARD_PROFILE,
+        _atomic_write,
+        _corrected_relaxation_backend,
+        EXPERIMENTS,
+        METHODS,
+        SCENARIOS,
+        _commercial_solver,
+        _default_result_path,
+        _aggregate_rows,
+        _archive_previous_results,
+        _bootstrap_commercial_environment,
+        _constraint_counts,
+        _resume_rows,
+        _experiment_dimensions,
+        _experiment_seeds,
+        _fista_relaxation_options,
+        _plot,
+        _precision_plot,
+        _prox_instance,
+        _prox_problem_data,
+        _rank_for_dimension,
+        _repository_root,
+        _row_base,
+        _seed_values,
+        _solve_bnb_run,
+        _solve_prox,
+        _solve_relaxation_run,
+        _workspace_root,
+        _write_rows,
+        _write_summary_rows,
+        parser as _synthetic_parser,
+    )
+    from ..relaxation import (
+        evaluate_solution,
+        perspective_value,
+        solve_relaxation,
+    )
+    from ..relaxation.fista import LinearConstraintProx
+    from .wilshire5000_data import DEFAULT_OUTPUT_DIR as DEFAULT_DATASET_DIR
+    from .wilshire5000_data import RealDataset, TIER_NAMES, load_dataset
 
 
 DEFAULT_PLOT = _default_result_path("four_scaling_six_panel_real.svg")
 DEFAULT_RESULTS = _default_result_path("four_scaling_results_real.csv")
+DEFAULT_PRECISION_PLOT = _default_result_path("four_scaling_precision_real.svg")
 DEFAULT_ACCURACY_OUTPUT = _default_result_path("four_scaling_accuracy_real.csv")
 DEFAULT_ACCURACY_SUMMARY = _default_result_path(
     "four_scaling_accuracy_real_summary.csv"
+)
+# The widest real universe holds about 3000 tickers, so the synthetic
+# ladder's n=5000 anchor cannot be sampled here and n=3000 is the top
+# rung.  Anything larger is skipped with a printed warning anyway.
+DEFAULT_EXACT_DIMENSIONS_REAL = (
+    10,
+    20,
+    30,
+    50,
+    80,
+    100,
+    150,
+    200,
+    300,
+    500,
+    800,
+    1000,
+    2000,
+    3000,
 )
 
 
@@ -149,16 +233,17 @@ def _build_real_instance(
 
 
 def _write_dict_rows(path: Path, rows: list[Dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
     if not rows:
-        with path.open("w", encoding="utf-8", newline="") as stream:
-            stream.write("")
+        _atomic_write(path, lambda stream: stream.write(""))
         return
     fields = sorted({key for row in rows for key in row})
-    with path.open("w", encoding="utf-8", newline="") as stream:
+
+    def render(stream: Any) -> None:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
+
+    _atomic_write(path, render)
 
 
 def _relative_error(value: Optional[float], reference: Optional[float]) -> Optional[float]:
@@ -197,7 +282,7 @@ def _solve_prox_with_details(
     args: argparse.Namespace,
 ) -> Dict[str, Any]:
     argument, gamma = _prox_problem_data(instance)
-    if method in {"fista_dual_fista", "fista_dual_lbfgs"}:
+    if method in {"fista_dual_fista", "fista_dual_lbfgs", "hybrid_newton"}:
         dual_solver = "fista" if method.endswith("dual_fista") else "lbfgs"
         oracle = LinearConstraintProx(
             instance.C,
@@ -213,6 +298,7 @@ def _solve_prox_with_details(
             lbfgs_memory=args.prox_lbfgs_memory,
             lbfgs_max_line_search=args.prox_lbfgs_max_line_search,
             lbfgs_fallback=args.prox_lbfgs_fallback,
+            semismooth_newton=method == "hybrid_newton",
         )
         result = oracle.solve(argument, gamma)
         diagnostics = evaluate_solution(instance, result.x, domain_tolerance=1e-8)
@@ -280,10 +366,9 @@ def _solve_relaxation_with_details(
             "time_limit": args.relaxation_time_limit,
             "tolerance": args.relaxation_tolerance,
             "log": False,
-            "warm_start": False,
         }
     else:
-        backend = "fista"
+        backend = _corrected_relaxation_backend(method)
         options = _fista_relaxation_options(method, args)
     result = solve_relaxation(
         instance,
@@ -488,7 +573,7 @@ def _run_accuracy_verification(
                         oracle = _solve_prox_with_details(instance, "gurobi", args)
                     else:
                         oracle = _solve_relaxation_with_details(instance, "gurobi", args)
-                    for method in ("fista_dual_fista", "fista_dual_lbfgs"):
+                    for method in ("fista_dual_fista", "fista_dual_lbfgs", "hybrid_newton"):
                         if experiment == "prox":
                             candidate = _solve_prox_with_details(instance, method, args)
                         else:
@@ -578,7 +663,12 @@ def parser() -> argparse.ArgumentParser:
         type=int,
         default=3,
     )
-    result.set_defaults(output=DEFAULT_RESULTS, plot=DEFAULT_PLOT)
+    result.set_defaults(
+        output=DEFAULT_RESULTS,
+        plot=DEFAULT_PLOT,
+        precision_plot=DEFAULT_PRECISION_PLOT,
+        exact_dimensions=list(DEFAULT_EXACT_DIMENSIONS_REAL),
+    )
     return result
 
 
@@ -601,13 +691,35 @@ def main(arguments: Optional[Sequence[str]] = None) -> None:
     dimensions = _available_dimensions(args.dimensions, dataset)
     print(f"Dimensions: {tuple(dimensions)}")
     print(f"Seeds per dimension: {args.seed_count}")
+    # An explicit exact ladder bypasses the --dimensions list, so it needs
+    # the same pool-size check: the real universes are finite and a
+    # dimension larger than the widest tier cannot be sampled at all.
+    if args.exact_dimensions:
+        args.exact_dimensions = _available_dimensions(
+            args.exact_dimensions,
+            dataset,
+        )
 
-    existing = _existing_rows(args.output) if args.resume else {}
+    checkpoint, existing = _resume_rows(args.resume, args.output)
+    if checkpoint is None:
+        print("Resume: disabled; every row is measured in this run")
+        _archive_previous_results(args.output)
+    else:
+        print(f"Resume checkpoint: {checkpoint}")
     keys_to_run: list[tuple[str, str, int, str, int]] = []
     for scenario, _ in SCENARIOS:
         for experiment in EXPERIMENTS:
-            for dimension in dimensions:
-                seeds = _seed_values(args.seed, scenario, int(dimension), args.seed_count)
+            for dimension in _experiment_dimensions(
+                experiment,
+                dimensions,
+                args.exact_max_dimension,
+                args.exact_dimensions,
+            ):
+                seeds = _experiment_seeds(
+                    experiment,
+                    _seed_values(args.seed, scenario, int(dimension), args.seed_count),
+                    args.exact_seed_count,
+                )
                 for seed_index, _ in enumerate(seeds):
                     for method in METHODS:
                         key = (scenario, experiment, int(dimension), method, int(seed_index))
@@ -623,10 +735,24 @@ def main(arguments: Optional[Sequence[str]] = None) -> None:
         print(f"[scenario] {scenario}")
         for experiment in EXPERIMENTS:
             print(f"  [experiment] {experiment}")
-            experiment_bar = tqdm(dimensions, desc=f"{scenario}:{experiment}", leave=False, unit="n")
+            experiment_bar = tqdm(
+                _experiment_dimensions(
+                    experiment,
+                    dimensions,
+                    args.exact_max_dimension,
+                    args.exact_dimensions,
+                ),
+                desc=f"{scenario}:{experiment}",
+                leave=False,
+                unit="n",
+            )
             for dimension in experiment_bar:
                 k = k_rule(int(dimension))
-                seeds = _seed_values(args.seed, scenario, int(dimension), args.seed_count)
+                seeds = _experiment_seeds(
+                    experiment,
+                    _seed_values(args.seed, scenario, int(dimension), args.seed_count),
+                    args.exact_seed_count,
+                )
                 experiment_bar.set_postfix({"n": dimension, "k": k})
                 seed_bar = tqdm(
                     list(enumerate(seeds)),
@@ -730,9 +856,11 @@ def main(arguments: Optional[Sequence[str]] = None) -> None:
     summary_path = args.output.with_name(args.output.stem + "_summary.csv")
     _write_summary_rows(summary_path, summary_rows)
     _plot(args.plot, summary_rows)
+    _precision_plot(args.precision_plot, all_rows)
     print(f"CSV: {args.output.resolve()}")
     print(f"Summary CSV: {summary_path.resolve()}")
     print(f"Plot: {args.plot.resolve()}")
+    print(f"Precision plot: {args.precision_plot.resolve()}")
     print(f"Rows written this run: {len(fresh_rows)}")
     if args.verify_accuracy:
         accuracy_rows, accuracy_summary = _run_accuracy_verification(args, dataset)

@@ -20,7 +20,7 @@ from sksfolio.bnb.bounds import ConditionalFenchelEvaluator
 from sksfolio.bnb.perspective import SelectorPerspectiveOracle
 from sksfolio.bnb.propagation import RowFeasibilityOracle
 from sksfolio.relaxation.problem import perspective_value
-from sksfolio.relaxation.pdhg.pava import prox as pava_prox
+from sksfolio.relaxation.pava import prox as pava_prox
 
 from tests._helpers import small_instance
 

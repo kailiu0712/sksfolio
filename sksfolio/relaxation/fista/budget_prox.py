@@ -23,12 +23,12 @@ from typing import Any
 import numpy as np
 from scipy.optimize import brentq
 
-from ..pdhg.pava._common import (
+from ..pava._common import (
     singleton_subtraction,
     validate as _validate_pava,
 )
-from ..pdhg.pava.full_sort import _pool
-from ..pdhg.pava.partial_sort import (
+from ..pava.full_sort import _pool
+from ..pava.partial_sort import (
     _mixed_pool_boundary,
     native_enabled as _native_partial_enabled,
     prox_native as _native_partial_prox,

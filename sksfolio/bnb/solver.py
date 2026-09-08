@@ -899,10 +899,18 @@ class _Search:
             return False
         lower = self._global_lower_bound()
         gap = max(0.0, self.upper - lower)
+        # Normalize by the incumbent, not by max(1, |incumbent|).  Portfolio
+        # objectives here have magnitude ~1e-2, so the old unit floor turned
+        # a 1e-4 relative request into a 1e-4 absolute one -- about a 1%
+        # relative gap, roughly a hundred times looser than the identical
+        # 1e-4 passed to Gurobi's MIPGap and MOSEK's mioTolRelGap, both of
+        # which divide by the incumbent.  That let this solver stop at the
+        # root while the commercial solvers kept branching, so their times
+        # were not comparable.
         target = max(
             float(self.settings["absolute_gap"]),
             float(self.settings["relative_gap"])
-            * max(1.0, abs(self.upper)),
+            * max(1e-10, abs(self.upper)),
         )
         return gap <= target
 
@@ -1215,7 +1223,7 @@ def solve_bnb(
     incumbent: Optional[Any] = None,
     required_assets: Sequence[int] = (),
     forbidden_assets: Sequence[int] = (),
-    relaxation_backend: str = "fista",
+    relaxation_backend: str = "corrected_lbfgs",
     incumbent_method: str = "auto",
     restricted_solver: str = DEFAULT_RESTRICTED_SOLVER,
     time_limit: Optional[float] = None,
@@ -1375,6 +1383,19 @@ def solve_bnb(
         raise ValueError(f"unknown BnB options: {unknown}")
 
     start = time.perf_counter()
+    from .cardinality_presolve import cardinality_certificate
+    presolve_certificate = cardinality_certificate(
+        instance, forbidden, tolerance=settings['row_propagation_tolerance'],
+    )
+    if presolve_certificate is not None:
+        elapsed=time.perf_counter()-start
+        return BranchAndBoundResult(dict(
+            status='infeasible', x=None, selectors=None,
+            upper_bound=None, lower_bound=None, absolute_gap=None, relative_gap=None,
+            nodes_processed=0, solve_seconds=elapsed, total_seconds=elapsed,
+            infeasibility_certificate=presolve_certificate,
+            infeasibility_source='disjoint_support_cardinality_presolve',
+        ))
     if relaxation is None:
         remaining = _remaining_time(start, time_limit)
         if remaining is not None:

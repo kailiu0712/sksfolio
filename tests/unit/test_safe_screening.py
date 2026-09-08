@@ -94,7 +94,7 @@ class SafeScreeningTests(unittest.TestCase):
         cls.optimal_support = cls.enumerated[0][1]
         cls.relaxation = solve_relaxation(
             cls.problem,
-            "fista",
+            "corrected_lbfgs",
             options={
                 "max_iterations": 10_000,
                 "check_interval": 10,

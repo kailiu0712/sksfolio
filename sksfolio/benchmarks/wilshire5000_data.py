@@ -68,11 +68,11 @@ OTHER_LISTED_URL = "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt"
 USER_AGENT = "Mozilla/5.0 (compatible; sksfolio-benchmark/1.0)"
 
 def _workspace_root() -> Path:
-    return Path(__file__).resolve().parents[7]
+    return Path(__file__).resolve().parents[6]
 
 
 def _results_root() -> Path:
-    return _workspace_root() / "proximal" / "code0808" / "results"
+    return _workspace_root() / "proximal" / "code0821brian" / "results"
 
 
 DEFAULT_OUTPUT_DIR = _results_root() / "data" / "wilshire5000"

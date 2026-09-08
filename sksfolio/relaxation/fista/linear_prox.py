@@ -17,10 +17,13 @@ where ``h(x) = 0.5 * ||x - v||^2 + gamma * G_k(x)`` and
     grad h^*(-C.T @ y) = -C @ prox_{gamma G_k}(v - C.T @ y).
 
 Thus, a general inner gradient evaluation requires one PAVA call and one
-application each of ``C`` and ``C.T``. The dual-FISTA path uses a
-local-curvature line search. The L-BFGS-B path independently verifies the
-signed fixed-point residual and primal interval violation, then falls back to
-dual FISTA if needed. Constraint rows are normalized internally.
+application each of ``C`` and ``C.T``. The corrected dual-FISTA path uses a
+globally safeguarded, locally adaptive curvature line search and recomputes
+its momentum before every changed-curvature trial. The L-BFGS-B path
+independently verifies the signed fixed-point residual and primal interval
+violation, then spends a finite dual-FISTA fallback budget if enabled. It
+reports nonconvergence when that budget also expires before the certificate
+passes. Constraint rows are normalized internally.
 """
 
 from __future__ import annotations
@@ -33,8 +36,29 @@ import numpy as np
 from scipy import sparse
 from scipy.optimize import fmin_l_bfgs_b
 
-from ..pdhg.pava import prox as pava_prox
+from ..pava import prox as pava_prox
 from .budget_prox import prox_budget_details
+
+
+def _fista_momentum(momentum: float) -> float:
+    """Return the classical FISTA momentum parameter."""
+    return 0.5 * (1.0 + math.sqrt(1.0 + 4.0 * momentum * momentum))
+
+
+def _variable_fista_momentum(
+    previous_momentum: float,
+    curvature: float,
+    previous_curvature: float,
+) -> float:
+    """Return momentum compatible with two accepted curvatures."""
+    ratio = curvature / previous_curvature
+    return 0.5 * (
+        1.0
+        + math.sqrt(
+            1.0
+            + 4.0 * ratio * previous_momentum * previous_momentum
+        )
+    )
 
 
 _DENSE_OPERATOR_MIN_DENSITY = 0.20
@@ -114,6 +138,26 @@ def _support_prox(
     return value - step * projection
 
 
+def _support_prox_inplace(
+    value_and_result: np.ndarray,
+    step: float,
+    lower: np.ndarray,
+    upper: np.ndarray,
+    projection_scratch: np.ndarray,
+) -> np.ndarray:
+    """Apply the interval-support proximal map without temporary arrays."""
+    np.divide(value_and_result, step, out=projection_scratch)
+    np.maximum(projection_scratch, lower, out=projection_scratch)
+    np.minimum(projection_scratch, upper, out=projection_scratch)
+    np.multiply(projection_scratch, step, out=projection_scratch)
+    np.subtract(
+        value_and_result,
+        projection_scratch,
+        out=value_and_result,
+    )
+    return value_and_result
+
+
 def _interval_violation(
     value: np.ndarray,
     lower: np.ndarray,
@@ -142,20 +186,47 @@ def _scaled_perspective_conjugate(
     gamma: float,
     k: int,
 ) -> float:
-    """Evaluate ``(gamma * G_k)^*`` in expected linear time."""
-    penalties = np.zeros_like(argument)
-    quadratic = (argument > 0.0) & (argument < gamma)
-    linear = argument >= gamma
-    penalties[quadratic] = (
-        0.5
-        * argument[quadratic]
-        * (argument[quadratic] / gamma)
-    )
-    penalties[linear] = argument[linear] - 0.5 * gamma
+    """Evaluate ``(gamma * G_k)^*`` in expected linear time.
+
+    With ``p = max(a, 0)`` and ``c = min(p, gamma)``, the three piecewise
+    branches collapse into ``(p - c) + c^2 / (2 gamma)``. Writing it that
+    way avoids boolean masks and repeated fancy indexing.
+    """
+    penalties = np.maximum(argument, 0.0)
+    capped = np.minimum(penalties, gamma)
+    penalties -= capped
+    capped *= capped
+    penalties += capped * (0.5 / gamma)
     if k >= penalties.size:
         return float(np.sum(penalties))
     split = penalties.size - k
     return float(np.sum(np.partition(penalties, split)[split:]))
+
+
+def _scaled_perspective_conjugate_scratch(
+    argument: np.ndarray,
+    gamma: float,
+    k: int,
+    positive_scratch: np.ndarray,
+    excess_scratch: np.ndarray,
+) -> float:
+    """Allocation-light equivalent of the scaled perspective conjugate."""
+    np.maximum(argument, 0.0, out=positive_scratch)
+    np.subtract(positive_scratch, gamma, out=excess_scratch)
+    np.maximum(excess_scratch, 0.0, out=excess_scratch)
+    np.square(positive_scratch, out=positive_scratch)
+    np.square(excess_scratch, out=excess_scratch)
+    np.subtract(
+        positive_scratch,
+        excess_scratch,
+        out=positive_scratch,
+    )
+    positive_scratch *= 0.5 / gamma
+    if k >= positive_scratch.size:
+        return float(np.sum(positive_scratch))
+    split = positive_scratch.size - k
+    positive_scratch.partition(split)
+    return float(np.sum(positive_scratch[split:]))
 
 
 def _smooth_dual_value(
@@ -164,11 +235,38 @@ def _smooth_dual_value(
     gamma: float,
     k: int,
 ) -> float:
-    """Evaluate the smooth dual term whose gradient is the prox point."""
+    """Evaluate ``psi_v(y) + 0.5 * ||v||^2`` from proximal data.
+
+    The omitted term is constant in the dual variable, so this shifted
+    value has exactly the same gradient, differences, line-search tests,
+    and minimizers as the Fenchel smooth term ``psi_v``.
+    """
     residual = shifted_argument - point
     return (
         0.5 * float(point @ point)
         + _scaled_perspective_conjugate(residual, gamma, k)
+    )
+
+
+def _smooth_dual_value_scratch(
+    shifted_argument: np.ndarray,
+    point: np.ndarray,
+    gamma: float,
+    k: int,
+    residual_scratch: np.ndarray,
+    positive_scratch: np.ndarray,
+    excess_scratch: np.ndarray,
+) -> float:
+    """Evaluate the shifted smooth dual with reusable work buffers."""
+    np.subtract(shifted_argument, point, out=residual_scratch)
+    return 0.5 * float(point @ point) + (
+        _scaled_perspective_conjugate_scratch(
+            residual_scratch,
+            gamma,
+            k,
+            positive_scratch,
+            excess_scratch,
+        )
     )
 
 
@@ -191,6 +289,7 @@ class LinearConstraintProx:
         lbfgs_memory: int = 10,
         lbfgs_max_line_search: int = 40,
         lbfgs_fallback: bool = True,
+        semismooth_newton: bool = False,
     ) -> None:
         constraint = sparse.csr_matrix(matrix, dtype=np.float64)
         constraint.sum_duplicates()
@@ -236,7 +335,6 @@ class LinearConstraintProx:
             raise ValueError("lbfgs_memory must be positive")
         if lbfgs_max_line_search < 1:
             raise ValueError("lbfgs_max_line_search must be positive")
-
         self.matrix = constraint
         self.lower = lower_array
         self.upper = upper_array
@@ -249,6 +347,13 @@ class LinearConstraintProx:
         self.lbfgs_memory = lbfgs_memory
         self.lbfgs_max_line_search = lbfgs_max_line_search
         self.lbfgs_fallback = bool(lbfgs_fallback)
+        # Newton builds a small dense row Hessian. Retain the sparse L-BFGS
+        # path when either dense storage or factorization would be excessive.
+        self.semismooth_newton = bool(
+            semismooth_newton
+            and constraint.shape[0] <= 256
+            and 2*constraint.shape[0]*constraint.shape[1] <= 5_000_000
+        )
         self.dimension = constraint.shape[1]
         self.rows = constraint.shape[0]
         self.exact_budget = bool(
@@ -297,22 +402,72 @@ class LinearConstraintProx:
         self._warm_dual = np.zeros(self.rows, dtype=float)
         self._has_warm_start = False
         self._warm_budget_eta: float | None = None
+        self._warm_lipschitz: float | None = None
         self.lipschitz, self.lipschitz_kind = self._dual_lipschitz()
 
-        finite_lower = np.isfinite(self.scaled_lower)
-        finite_upper = np.isfinite(self.scaled_upper)
+        scaled_lower_finite = np.isfinite(self.scaled_lower)
+        scaled_upper_finite = np.isfinite(self.scaled_upper)
+        self._scaled_lower_all = bool(np.all(scaled_lower_finite))
+        self._scaled_upper_all = bool(np.all(scaled_upper_finite))
+        self._scaled_lower_index = np.flatnonzero(scaled_lower_finite)
+        self._scaled_upper_index = np.flatnonzero(scaled_upper_finite)
+        self._scaled_lower_finite_values = self.scaled_lower[
+            self._scaled_lower_index
+        ]
+        self._scaled_upper_finite_values = self.scaled_upper[
+            self._scaled_upper_index
+        ]
+
         equality = (
-            finite_lower
-            & finite_upper
+            scaled_lower_finite
+            & scaled_upper_finite
             & (self.scaled_lower == self.scaled_upper)
         )
         self._lbfgs_equal = np.flatnonzero(equality)
         self._lbfgs_upper = np.flatnonzero(
-            finite_upper & ~equality
+            scaled_upper_finite & ~equality
         )
         self._lbfgs_lower = np.flatnonzero(
-            finite_lower & ~equality
+            scaled_lower_finite & ~equality
         )
+        self._lbfgs_bounds = (
+            [(None, None)] * self._lbfgs_equal.size
+            + [(0.0, None)]
+            * (self._lbfgs_upper.size + self._lbfgs_lower.size)
+        )
+        self._lbfgs_equal_bound = self.scaled_lower[self._lbfgs_equal]
+        self._lbfgs_upper_bound = self.scaled_upper[self._lbfgs_upper]
+        self._lbfgs_lower_bound = self.scaled_lower[self._lbfgs_lower]
+        self._lbfgs_size = int(
+            self._lbfgs_equal.size
+            + self._lbfgs_upper.size
+            + self._lbfgs_lower.size
+        )
+        self._lbfgs_gradient = np.empty(self._lbfgs_size, dtype=float)
+        self._lbfgs_dual_buffer = np.zeros(self.rows, dtype=float)
+        self._newton_matrix = None
+        if self.semismooth_newton:
+            self._newton_matrix = sparse.vstack([
+                self.scaled_matrix[self._lbfgs_equal],
+                self.scaled_matrix[self._lbfgs_upper],
+                -self.scaled_matrix[self._lbfgs_lower],
+            ]).toarray()
+
+        self._scratch_shift = np.empty(self.dimension, dtype=float)
+        self._scratch_candidate_shift = np.empty(
+            self.dimension,
+            dtype=float,
+        )
+        self._scratch_penalty = np.empty(self.dimension, dtype=float)
+        self._scratch_capped = np.empty(self.dimension, dtype=float)
+        self._scratch_residual = np.empty(self.dimension, dtype=float)
+        self._scratch_rows = np.empty(self.rows, dtype=float)
+        self._scratch_candidate_rows = np.empty(self.rows, dtype=float)
+        self._scratch_project = np.empty(self.rows, dtype=float)
+        self._scratch_candidate = np.empty(self.rows, dtype=float)
+        self._scratch_fixed_point = np.empty(self.rows, dtype=float)
+        self._scratch_dual_difference = np.empty(self.rows, dtype=float)
+        self._scratch_original_rows = np.empty(self.rows, dtype=float)
 
     @property
     def method(self) -> str:
@@ -321,6 +476,8 @@ class LinearConstraintProx:
         if self.exact_budget:
             return "exact_budget_scalar_brent"
         if self.dual_solver == "lbfgs":
+            if self.semismooth_newton:
+                return "row_scaled_dual_lbfgsb_newton"
             return "row_scaled_dual_lbfgsb"
         return "row_scaled_dual_fista"
 
@@ -329,27 +486,37 @@ class LinearConstraintProx:
         self._warm_dual.fill(0.0)
         self._has_warm_start = False
         self._warm_budget_eta = None
+        self._warm_lipschitz = None
 
-    def snapshot(self) -> tuple[np.ndarray, bool, float | None]:
+    def snapshot(
+        self,
+    ) -> tuple[np.ndarray, bool, float | None, float | None]:
         """Return a copy of the committed warm-start state."""
         return (
             self._warm_dual.copy(),
             bool(self._has_warm_start),
             self._warm_budget_eta,
+            self._warm_lipschitz,
         )
 
     def restore(
         self,
-        state: tuple[np.ndarray, bool, float | None],
+        state: tuple[
+            np.ndarray,
+            bool,
+            float | None,
+            float | None,
+        ],
     ) -> None:
         """Restore a state, for example after a rejected outer trial."""
-        dual, available, budget_eta = state
+        dual, available, budget_eta, inner_lipschitz = state
         dual = np.asarray(dual, dtype=float).reshape(-1)
         if dual.shape != (self.rows,):
             raise ValueError("prox state has the wrong dimension")
         self._warm_dual = dual.copy()
         self._has_warm_start = bool(available)
         self._warm_budget_eta = budget_eta
+        self._warm_lipschitz = inner_lipschitz
 
     def initialize_warm_start(
         self,
@@ -391,6 +558,7 @@ class LinearConstraintProx:
             raise ValueError("warm-start multiplier must be finite")
         self._warm_dual = dual.copy()
         self._has_warm_start = bool(self.rows or budget_eta is not None)
+        self._warm_lipschitz = None
         self._warm_budget_eta = (
             None if budget_eta is None else float(budget_eta)
         )
@@ -401,6 +569,7 @@ class LinearConstraintProx:
             "internal_dual": self._warm_dual.copy(),
             "has_warm_start": bool(self._has_warm_start),
             "budget_eta": self._warm_budget_eta,
+            "inner_lipschitz": self._warm_lipschitz,
             "row_norms": self.row_norms.copy(),
         }
 
@@ -438,6 +607,65 @@ class LinearConstraintProx:
             self.pava_method,
         )
 
+    def _transpose_matvec_into(
+        self,
+        value: np.ndarray,
+        result: np.ndarray,
+    ) -> np.ndarray:
+        """Compute ``A.T @ value`` into reusable storage when possible."""
+        if self.dense_operator:
+            np.matmul(self.scaled_transpose, value, out=result)
+        else:
+            result[:] = np.asarray(
+                self.scaled_transpose @ value,
+                dtype=float,
+            ).reshape(-1)
+        return result
+
+    def _operator_matvec_into(
+        self,
+        value: np.ndarray,
+        result: np.ndarray,
+    ) -> np.ndarray:
+        """Compute ``A @ value`` into reusable storage when possible."""
+        if self.dense_operator:
+            np.matmul(self.scaled_operator, value, out=result)
+        else:
+            result[:] = np.asarray(
+                self.scaled_operator @ value,
+                dtype=float,
+            ).reshape(-1)
+        return result
+
+    def _scaled_violation(self, rows: np.ndarray) -> float:
+        """Interval violation in row-normalized coordinates, cached masks."""
+        violation = 0.0
+        if self._scaled_lower_all:
+            violation = float(np.max(self.scaled_lower - rows))
+        elif self._scaled_lower_index.size:
+            violation = float(
+                np.max(
+                    self._scaled_lower_finite_values
+                    - rows[self._scaled_lower_index]
+                )
+            )
+        if self._scaled_upper_all:
+            violation = max(
+                violation,
+                float(np.max(rows - self.scaled_upper)),
+            )
+        elif self._scaled_upper_index.size:
+            violation = max(
+                violation,
+                float(
+                    np.max(
+                        rows[self._scaled_upper_index]
+                        - self._scaled_upper_finite_values
+                    )
+                ),
+            )
+        return violation if violation > 0.0 else 0.0
+
     def _lbfgs_coordinates(self, dual: np.ndarray) -> np.ndarray:
         """Map one support-function multiplier to smooth split variables."""
         pieces = []
@@ -455,9 +683,17 @@ class LinearConstraintProx:
             return np.empty(0, dtype=float)
         return np.concatenate(pieces)
 
-    def _lbfgs_dual(self, coordinates: np.ndarray) -> np.ndarray:
+    def _lbfgs_dual(
+        self,
+        coordinates: np.ndarray,
+        out: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         """Map equality/upper/lower variables to one signed multiplier."""
-        dual = np.zeros(self.rows, dtype=float)
+        if out is None:
+            dual = np.zeros(self.rows, dtype=float)
+        else:
+            dual = out
+            dual.fill(0.0)
         cursor = 0
         count = self._lbfgs_equal.size
         if count:
@@ -492,10 +728,16 @@ class LinearConstraintProx:
         equality_count = self._lbfgs_equal.size
         upper_count = self._lbfgs_upper.size
         lower_count = self._lbfgs_lower.size
-        bounds = (
-            [(None, None)] * equality_count
-            + [(0.0, None)] * (upper_count + lower_count)
-        )
+        bounds = self._lbfgs_bounds
+        equal_index = self._lbfgs_equal
+        upper_index = self._lbfgs_upper
+        lower_index = self._lbfgs_lower
+        equal_bound = self._lbfgs_equal_bound
+        upper_bound = self._lbfgs_upper_bound
+        lower_bound = self._lbfgs_lower_bound
+        gradient_buffer = self._lbfgs_gradient
+        dual_buffer = self._lbfgs_dual_buffer
+        shift_buffer = self._scratch_shift
         evaluations = 0
         cached_coordinates: Optional[np.ndarray] = None
         cached_point: Optional[np.ndarray] = None
@@ -506,74 +748,92 @@ class LinearConstraintProx:
         ) -> tuple[float, np.ndarray]:
             nonlocal evaluations
             nonlocal cached_coordinates, cached_point, cached_rows
-            dual = self._lbfgs_dual(coordinates)
-            shift = np.asarray(
-                self.scaled_transpose @ dual,
-                dtype=float,
-            ).reshape(-1)
-            shifted_argument = values - shift
-            point = self._pava(shifted_argument, gamma)
-            rows = np.asarray(
-                self.scaled_operator @ point,
-                dtype=float,
-            ).reshape(-1)
-            value = _smooth_dual_value(
-                shifted_argument,
+            dual = self._lbfgs_dual(coordinates, out=dual_buffer)
+            self._transpose_matvec_into(dual, shift_buffer)
+            np.subtract(values, shift_buffer, out=shift_buffer)
+            point = self._pava(shift_buffer, gamma)
+            rows = self._operator_matvec_into(
+                point,
+                self._scratch_rows,
+            )
+            value = _smooth_dual_value_scratch(
+                shift_buffer,
                 point,
                 gamma,
                 self.k,
+                self._scratch_residual,
+                self._scratch_penalty,
+                self._scratch_capped,
             )
-            gradient_parts = []
+            cursor = 0
             if equality_count:
-                equality = self._lbfgs_equal
                 value += float(
-                    self.scaled_lower[equality]
-                    @ coordinates[:equality_count]
+                    equal_bound @ coordinates[:equality_count]
                 )
-                gradient_parts.append(
-                    self.scaled_lower[equality] - rows[equality]
-                )
-            cursor = equality_count
+                block = gradient_buffer[:equality_count]
+                rows.take(equal_index, out=block)
+                np.subtract(equal_bound, block, out=block)
+                cursor = equality_count
             if upper_count:
-                upper = self._lbfgs_upper
-                upper_coordinates = coordinates[
-                    cursor : cursor + upper_count
-                ]
+                stop = cursor + upper_count
                 value += float(
-                    self.scaled_upper[upper] @ upper_coordinates
+                    upper_bound @ coordinates[cursor:stop]
                 )
-                gradient_parts.append(
-                    self.scaled_upper[upper] - rows[upper]
-                )
-                cursor += upper_count
+                block = gradient_buffer[cursor:stop]
+                rows.take(upper_index, out=block)
+                np.subtract(upper_bound, block, out=block)
+                cursor = stop
             if lower_count:
-                lower = self._lbfgs_lower
-                lower_coordinates = coordinates[
-                    cursor : cursor + lower_count
-                ]
+                stop = cursor + lower_count
                 value -= float(
-                    self.scaled_lower[lower] @ lower_coordinates
+                    lower_bound @ coordinates[cursor:stop]
                 )
-                gradient_parts.append(
-                    rows[lower] - self.scaled_lower[lower]
-                )
-            gradient = (
-                np.concatenate(gradient_parts)
-                if gradient_parts
-                else np.empty(0, dtype=float)
-            )
+                block = gradient_buffer[cursor:stop]
+                rows.take(lower_index, out=block)
+                np.subtract(block, lower_bound, out=block)
             evaluations += 1
             cached_coordinates = coordinates.copy()
             cached_point = point
-            cached_rows = rows
-            return float(value), gradient
+            cached_rows = rows.copy()
+            return float(value), gradient_buffer.copy()
+
+        optimizer = fmin_l_bfgs_b
+        if self.semismooth_newton and initial.size:
+            from .semismooth import minimize_split_dual, pava_jacobian_parts
+            signed_matrix = self._newton_matrix
+
+            def hessian(indices):
+                diagonal, pool, beta = pava_jacobian_parts(
+                    shift_buffer, cached_point, gamma, self.k,
+                )
+                nonzero = np.flatnonzero(diagonal)
+                rows = signed_matrix[np.ix_(indices, nonzero)]
+                matrix = (rows * diagonal[nonzero]) @ rows.T
+                if beta:
+                    pooled = np.sum(rows[:, pool[nonzero]], axis=1)
+                    matrix -= beta * np.outer(pooled, pooled)
+                return matrix
+
+            def optimizer(fun, x, **kwargs):
+                warm_kwargs = dict(kwargs)
+                warm_kwargs['maxiter'] = min(8, kwargs['maxiter'])
+                warm_x, warm_value, warm_info = fmin_l_bfgs_b(fun, x, **warm_kwargs)
+                if warm_info.get('warnflag') == 0:
+                    return warm_x, warm_value, warm_info
+                remaining = kwargs['maxiter'] - warm_info.get('nit', 0)
+                if remaining <= 0:
+                    return warm_x, warm_value, warm_info
+                newton_kwargs = dict(kwargs, maxiter=remaining)
+                result_x, result_value, info = minimize_split_dual(fun, warm_x, hessian=hessian, **newton_kwargs)
+                info['nit'] += warm_info.get('nit', 0)
+                return result_x, result_value, info
 
         if initial.size:
             (
                 final_coordinates,
                 _,
                 optimizer_information,
-            ) = fmin_l_bfgs_b(
+            ) = optimizer(
                 objective_gradient,
                 initial,
                 bounds=bounds,
@@ -613,11 +873,9 @@ class LinearConstraintProx:
             raise RuntimeError("L-BFGS dual evaluation returned no point")
 
         final_dual = self._lbfgs_dual(final_coordinates)
-        local_lipschitz = max(
-            self.lipschitz / (1.0 + gamma),
-            self.lipschitz * 1e-12,
-            1e-15,
-        )
+        # ``0.5 * ||x - v||^2 + gamma * G_k(x)`` is only guaranteed
+        # 1-strongly convex, so the rigorous dual curvature is ||A||^2.
+        local_lipschitz = max(self.lipschitz, 1e-15)
         step = 1.0 / local_lipschitz
         fixed_point = _support_prox(
             final_dual + step * cached_rows,
@@ -632,10 +890,8 @@ class LinearConstraintProx:
             )
             / step
         )
-        scaled_constraint_violation = _interval_violation(
-            cached_rows,
-            self.scaled_lower,
-            self.scaled_upper,
+        scaled_constraint_violation = self._scaled_violation(
+            cached_rows
         )
         original_rows = cached_rows * self.row_norms
         constraint_violation = _interval_violation(
@@ -723,6 +979,256 @@ class LinearConstraintProx:
             ),
             fallback_used=True,
             optimizer_status=lbfgs_result.optimizer_status,
+        )
+
+    def _solve_dual_fista_current(
+        self,
+        values: np.ndarray,
+        gamma: float,
+        active_tolerance: float,
+        active_limit: int,
+    ) -> LinearProxResult:
+        """Solve the prox dual with curvature-synchronous FISTA.
+
+        The operator-norm curvature is a global safeguard, not a mandatory
+        step size.  On one PLQ cell the PAVA prox is affine and the actual
+        dual curvature can be orders of magnitude smaller.  We therefore
+        probe a smaller curvature at every iteration and certify it with the
+        usual smooth majorization test.
+
+        When the trial curvature changes, the momentum and extrapolated point
+        are recomputed *before* evaluating the trial.  For consecutive
+        accepted curvatures this gives
+
+            t_j (t_j - 1) / L_j = t_{j-1}^2 / L_{j-1},
+
+        which is the variable-curvature FISTA compatibility identity.  This
+        is the key distinction from the historical delayed curvature-ratio
+        update, which changed the next momentum only after the current
+        extrapolated point had already been used.
+        """
+        dual = self._warm_dual.copy()
+        previous_dual = dual.copy()
+        previous_momentum = 1.0
+        warm_started = self._has_warm_start
+        pava_calls = 0
+        restarts = 0
+        line_search_backtracks = 0
+        fixed_point_residual = math.inf
+        constraint_violation = math.inf
+        scaled_constraint_violation = math.inf
+        final_point = np.zeros(self.dimension, dtype=float)
+        final_dual = dual
+        converged = False
+        completed = 0
+
+        curvature_floor = max(self.lipschitz * 1e-12, 1e-15)
+        # ``1 + gamma`` is only a structure-informed initial probe.  The
+        # accepted curvature is certified by backtracking and does not rely
+        # on G_k being strongly convex.
+        structural_probe = max(
+            self.lipschitz / (1.0 + gamma),
+            curvature_floor,
+        )
+        local_lipschitz = (
+            max(self._warm_lipschitz, curvature_floor)
+            if self._warm_lipschitz is not None
+            and math.isfinite(self._warm_lipschitz)
+            and self._warm_lipschitz > 0.0
+            else structural_probe
+        )
+        epoch_first_step = True
+        shift_buffer = self._scratch_shift
+        candidate_shift_buffer = self._scratch_candidate_shift
+        row_buffer = self._scratch_rows
+        candidate_rows_buffer = self._scratch_candidate_rows
+        candidate_buffer = self._scratch_candidate
+        fixed_point_buffer = self._scratch_fixed_point
+        project_buffer = self._scratch_project
+        difference_buffer = self._scratch_dual_difference
+        residual_buffer = self._scratch_residual
+        original_rows_buffer = self._scratch_original_rows
+
+        for iteration in range(1, active_limit + 1):
+            trial_lipschitz = max(
+                local_lipschitz / 1.5,
+                curvature_floor,
+            )
+            for _ in range(60):
+                if epoch_first_step:
+                    momentum = 1.0
+                    extrapolated = dual
+                else:
+                    momentum = _variable_fista_momentum(
+                        previous_momentum,
+                        trial_lipschitz,
+                        local_lipschitz,
+                    )
+                    extrapolated = dual + (
+                        (previous_momentum - 1.0) / momentum
+                    ) * (dual - previous_dual)
+
+                self._transpose_matvec_into(
+                    extrapolated,
+                    shift_buffer,
+                )
+                np.subtract(values, shift_buffer, out=shift_buffer)
+                point = self._pava(shift_buffer, gamma)
+                pava_calls += 1
+                row_value = self._operator_matvec_into(
+                    point,
+                    row_buffer,
+                )
+                smooth_value = _smooth_dual_value_scratch(
+                    shift_buffer,
+                    point,
+                    gamma,
+                    self.k,
+                    residual_buffer,
+                    self._scratch_penalty,
+                    self._scratch_capped,
+                )
+
+                step = 1.0 / trial_lipschitz
+                np.copyto(candidate_buffer, extrapolated)
+                candidate_buffer += step * row_value
+                candidate = _support_prox_inplace(
+                    candidate_buffer,
+                    step,
+                    self.scaled_lower,
+                    self.scaled_upper,
+                    project_buffer,
+                )
+                self._transpose_matvec_into(
+                    candidate,
+                    candidate_shift_buffer,
+                )
+                np.subtract(
+                    values,
+                    candidate_shift_buffer,
+                    out=candidate_shift_buffer,
+                )
+                candidate_point = self._pava(candidate_shift_buffer, gamma)
+                pava_calls += 1
+                candidate_smooth = _smooth_dual_value_scratch(
+                    candidate_shift_buffer,
+                    candidate_point,
+                    gamma,
+                    self.k,
+                    residual_buffer,
+                    self._scratch_penalty,
+                    self._scratch_capped,
+                )
+                np.subtract(
+                    candidate,
+                    extrapolated,
+                    out=difference_buffer,
+                )
+                model = (
+                    smooth_value
+                    - float(row_value @ difference_buffer)
+                    + 0.5
+                    * trial_lipschitz
+                    * float(difference_buffer @ difference_buffer)
+                )
+                scale = max(
+                    1.0,
+                    abs(smooth_value),
+                    abs(candidate_smooth),
+                )
+                if candidate_smooth <= model + 1e-12 * scale:
+                    break
+                trial_lipschitz *= 2.0
+                line_search_backtracks += 1
+            else:
+                raise RuntimeError(
+                    "dual FISTA prox line search failed"
+                )
+
+            local_lipschitz = trial_lipschitz
+            candidate_rows = self._operator_matvec_into(
+                candidate_point,
+                candidate_rows_buffer,
+            )
+            np.copyto(fixed_point_buffer, candidate)
+            fixed_point_buffer += step * candidate_rows
+            next_dual = _support_prox_inplace(
+                fixed_point_buffer,
+                step,
+                self.scaled_lower,
+                self.scaled_upper,
+                project_buffer,
+            )
+            np.subtract(
+                next_dual,
+                candidate,
+                out=difference_buffer,
+            )
+            fixed_point_residual = float(
+                np.linalg.norm(difference_buffer, ord=np.inf) / step
+            )
+            scaled_constraint_violation = self._scaled_violation(
+                candidate_rows
+            )
+            np.multiply(
+                candidate_rows,
+                self.row_norms,
+                out=original_rows_buffer,
+            )
+            constraint_violation = _interval_violation(
+                original_rows_buffer,
+                self.lower,
+                self.upper,
+            )
+            final_point = candidate_point
+            final_dual = candidate.copy()
+            completed = iteration
+            if (
+                fixed_point_residual <= active_tolerance
+                and scaled_constraint_violation <= active_tolerance
+            ):
+                converged = True
+                break
+
+            restart_now = bool(
+                self.adaptive_restart
+                and float(
+                    (extrapolated - candidate) @ (candidate - dual)
+                )
+                > 0.0
+            )
+            old_dual = dual
+            dual = candidate
+            if restart_now:
+                previous_dual = candidate.copy()
+                previous_momentum = 1.0
+                epoch_first_step = True
+                restarts += 1
+            else:
+                previous_dual = old_dual
+                previous_momentum = momentum
+                epoch_first_step = False
+
+        self._warm_dual = final_dual.copy()
+        self._has_warm_start = True
+        self._warm_lipschitz = float(local_lipschitz)
+        return LinearProxResult(
+            x=final_point,
+            constraint_multiplier=final_dual / self.row_norms,
+            converged=converged,
+            iterations=int(completed),
+            pava_calls=int(pava_calls),
+            fixed_point_residual=float(fixed_point_residual),
+            constraint_violation=float(constraint_violation),
+            scaled_constraint_violation=float(
+                scaled_constraint_violation
+            ),
+            method=self.method,
+            lipschitz=float(local_lipschitz),
+            restarts=int(restarts),
+            line_search_backtracks=int(line_search_backtracks),
+            warm_started=warm_started,
+            function_evaluations=int(pava_calls),
         )
 
     def solve(
@@ -841,173 +1347,12 @@ class LinearConstraintProx:
                 active_limit,
             )
 
-        dual = self._warm_dual.copy()
-        extrapolated = dual.copy()
-        momentum = 1.0
-        warm_started = self._has_warm_start
-        pava_calls = 0
-        restarts = 0
-        line_search_backtracks = 0
-        fixed_point_residual = math.inf
-        constraint_violation = math.inf
-        scaled_constraint_violation = math.inf
-        final_point = np.zeros(self.dimension, dtype=float)
-        final_dual = dual
-        converged = False
-        completed = 0
-        local_lipschitz = max(
-            self.lipschitz / (1.0 + gamma),
-            self.lipschitz * 1e-12,
-            1e-15,
+        return self._solve_dual_fista_current(
+            values,
+            gamma,
+            active_tolerance,
+            active_limit,
         )
-
-        for iteration in range(1, active_limit + 1):
-            shift = np.asarray(
-                self.scaled_transpose @ extrapolated,
-                dtype=float,
-            ).reshape(-1)
-            shifted_argument = values - shift
-            point = self._pava(shifted_argument, gamma)
-            pava_calls += 1
-            row_value = np.asarray(
-                self.scaled_operator @ point,
-                dtype=float,
-            ).reshape(-1)
-            smooth_value = _smooth_dual_value(
-                shifted_argument,
-                point,
-                gamma,
-                self.k,
-            )
-            trial_lipschitz = max(
-                local_lipschitz / 1.5,
-                self.lipschitz * 1e-12,
-                1e-15,
-            )
-            for _ in range(60):
-                step = 1.0 / trial_lipschitz
-                candidate = _support_prox(
-                    extrapolated + step * row_value,
-                    step,
-                    self.scaled_lower,
-                    self.scaled_upper,
-                )
-                candidate_shift = np.asarray(
-                    self.scaled_transpose @ candidate,
-                    dtype=float,
-                ).reshape(-1)
-                candidate_argument = values - candidate_shift
-                candidate_point = self._pava(
-                    candidate_argument,
-                    gamma,
-                )
-                pava_calls += 1
-                candidate_smooth = _smooth_dual_value(
-                    candidate_argument,
-                    candidate_point,
-                    gamma,
-                    self.k,
-                )
-                difference = candidate - extrapolated
-                model = (
-                    smooth_value
-                    - float(row_value @ difference)
-                    + 0.5
-                    * trial_lipschitz
-                    * float(difference @ difference)
-                )
-                scale = max(
-                    1.0,
-                    abs(smooth_value),
-                    abs(candidate_smooth),
-                )
-                if candidate_smooth <= model + 1e-12 * scale:
-                    break
-                trial_lipschitz *= 2.0
-                line_search_backtracks += 1
-            else:
-                raise RuntimeError(
-                    "dual FISTA prox line search failed"
-                )
-            local_lipschitz = trial_lipschitz
-            candidate_rows = np.asarray(
-                self.scaled_operator @ candidate_point,
-                dtype=float,
-            ).reshape(-1)
-            next_dual = _support_prox(
-                candidate + step * candidate_rows,
-                step,
-                self.scaled_lower,
-                self.scaled_upper,
-            )
-            fixed_point_residual = float(
-                np.linalg.norm(next_dual - candidate, ord=np.inf)
-                / step
-            )
-            scaled_constraint_violation = _interval_violation(
-                candidate_rows,
-                self.scaled_lower,
-                self.scaled_upper,
-            )
-            original_rows = candidate_rows * self.row_norms
-            constraint_violation = _interval_violation(
-                original_rows,
-                self.lower,
-                self.upper,
-            )
-            final_point = candidate_point
-            final_dual = candidate
-            completed = iteration
-            if (
-                fixed_point_residual <= active_tolerance
-                and scaled_constraint_violation <= active_tolerance
-            ):
-                converged = True
-                break
-
-            restart_now = bool(
-                self.adaptive_restart
-                and float(
-                    (extrapolated - candidate) @ (candidate - dual)
-                )
-                > 0.0
-            )
-            if restart_now:
-                next_momentum = 1.0
-                next_extrapolated = candidate.copy()
-                restarts += 1
-            else:
-                next_momentum = 0.5 * (
-                    1.0 + math.sqrt(1.0 + 4.0 * momentum * momentum)
-                )
-                next_extrapolated = candidate + (
-                    (momentum - 1.0) / next_momentum
-                ) * (candidate - dual)
-            dual = candidate
-            extrapolated = next_extrapolated
-            momentum = next_momentum
-
-        self._warm_dual = final_dual.copy()
-        self._has_warm_start = True
-        original_multiplier = final_dual / self.row_norms
-        return LinearProxResult(
-            x=final_point,
-            constraint_multiplier=original_multiplier,
-            converged=converged,
-            iterations=int(completed),
-            pava_calls=int(pava_calls),
-            fixed_point_residual=float(fixed_point_residual),
-            constraint_violation=float(constraint_violation),
-            scaled_constraint_violation=float(
-                scaled_constraint_violation
-            ),
-            method=self.method,
-            lipschitz=float(local_lipschitz),
-            restarts=int(restarts),
-            line_search_backtracks=int(line_search_backtracks),
-            warm_started=warm_started,
-        )
-
 
 def prox_linear_details(
     argument: Any,

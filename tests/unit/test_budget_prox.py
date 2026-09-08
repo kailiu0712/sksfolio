@@ -10,7 +10,7 @@ from sksfolio.relaxation.fista import (
     prox_budget,
     prox_budget_details,
 )
-from sksfolio.relaxation.pdhg.pava import prox as pava_prox
+from sksfolio.relaxation.pava import prox as pava_prox
 
 
 def _simplex_projection(values: np.ndarray) -> np.ndarray:

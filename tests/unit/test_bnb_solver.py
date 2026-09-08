@@ -59,7 +59,7 @@ class SmallExactBnBTests(unittest.TestCase):
         )
         cls.relaxation = solve_relaxation(
             cls.problem,
-            "fista",
+            "corrected_lbfgs",
             options={
                 "max_iterations": 10_000,
                 "check_interval": 10,
@@ -195,7 +195,7 @@ class CutAndTerminationBnBTests(unittest.TestCase):
         )
         cls.relaxation = solve_relaxation(
             cls.problem,
-            "fista",
+            "corrected_lbfgs",
             options={"max_iterations": 10_000, "tolerance": 1e-10},
         )
         cls.incumbent = solve_incumbent(
@@ -320,7 +320,7 @@ class CutAndTerminationBnBTests(unittest.TestCase):
         problem.validate()
         relaxation = solve_relaxation(
             problem,
-            "fista",
+            "corrected_lbfgs",
             options={"max_iterations": 10_000, "tolerance": 1e-9},
         )
         result = solve_bnb(
@@ -340,7 +340,7 @@ class BnBFailureAndTimeLimitTests(unittest.TestCase):
         cls.problem = screening_instance()
         cls.relaxation = solve_relaxation(
             cls.problem,
-            "fista",
+            "corrected_lbfgs",
             options={"max_iterations": 10_000, "tolerance": 1e-10},
         )
         cls.incumbent = solve_incumbent(

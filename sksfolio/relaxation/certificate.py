@@ -50,7 +50,7 @@ class SafeDualCertificate:
 
     def recompute(self, problem: Any) -> Dict[str, Any]:
         """Independently reevaluate the lower bound."""
-        from .pdhg.safe_dual import evaluate_dual_bound
+        from .safe_dual import evaluate_dual_bound
 
         return evaluate_dual_bound(
             problem,

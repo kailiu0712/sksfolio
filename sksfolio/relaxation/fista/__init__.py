@@ -11,21 +11,12 @@ from .linear_prox import (
     prox_linear,
     prox_linear_details,
 )
-from .majorization_qp import (
-    MajorizationQPOracle,
-    MajorizationQPResult,
-    MajorizationQPWarmStart,
-)
 from .solver import solve_fista
 
 
 FISTA_PROX_ORACLES = (
-    "auto",
-    "pava",
-    "budget",
     "dual_fista",
     "dual_lbfgs",
-    "majorization_qp",
 )
 FISTA_RESTART_STRATEGIES = (
     "none",
@@ -42,9 +33,6 @@ __all__ = [
     "FISTA_RESTART_STRATEGIES",
     "LinearConstraintProx",
     "LinearProxResult",
-    "MajorizationQPOracle",
-    "MajorizationQPResult",
-    "MajorizationQPWarmStart",
     "prox_budget",
     "prox_budget_details",
     "prox_linear",

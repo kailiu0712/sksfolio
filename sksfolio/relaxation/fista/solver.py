@@ -5,11 +5,9 @@ The backend solves
     minimize 0.5 * ||B.T @ x||^2 - rho * mu.T @ x + omega * G_k(x)
     subject to lower <= C @ x <= upper.
 
-The interval rows are kept inside the proximal step. The automatic path uses
-a warm-started split-dual L-BFGS-B oracle for any nonempty row structure,
-with dual FISTA as a safeguarded fallback. The specialized exact scalar
-Brent/PAVA budget oracle remains explicitly selectable; all paths use the
-same PAVA primitive.
+The interval rows are kept inside the proximal step. Exactly two corrected
+algorithms are supported: a curvature-synchronous dual-FISTA oracle and a
+split-dual L-BFGS-B oracle with corrected dual-FISTA fallback.
 """
 
 from __future__ import annotations
@@ -22,16 +20,20 @@ from typing import Any, Dict, Mapping, Optional, Tuple
 
 import numpy as np
 from scipy import sparse
-from ..pdhg.safe_dual import SafeDualEvaluator
+from .._threading import limit_blas_threads, threadpool_info
+from ..safe_dual import SafeDualEvaluator
 from ..problem import evaluate_solution, perspective_value
 from ..state import RelaxationState
 from .linear_prox import LinearConstraintProx
 
 
-_IMPLEMENTATION = (
-    "native" if __name__.endswith("._native_solver") else "python"
-)
-_LANGUAGE = "cython" if _IMPLEMENTATION == "native" else "python"
+_IMPLEMENTATION = "python"
+_LANGUAGE = "python"
+
+
+def _fista_momentum(momentum: float) -> float:
+    """Return the classical FISTA momentum parameter."""
+    return 0.5 * (1.0 + math.sqrt(1.0 + 4.0 * momentum * momentum))
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,7 @@ class _Settings:
     restart_function_tolerance: float
     norm_iterations: int
     prox_tolerance: float
+    prox_target_ceiling: float
     prox_max_iterations: int
     pava_backend: str
     prox_oracle: str
@@ -61,9 +64,6 @@ class _Settings:
     prox_lbfgs_memory: int
     prox_lbfgs_max_line_search: int
     prox_lbfgs_fallback: bool
-    majorization_max_iterations: int
-    majorization_polish: bool
-    majorization_max_lift_variables: int
     dual_bound_cutoff: Optional[float]
     warm_start: Optional[RelaxationState]
     resume_acceleration: bool
@@ -105,9 +105,11 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
     initial_lipschitz = (
         None if raw_lipschitz is None else float(raw_lipschitz)
     )
-    backtracking_factor = float(
-        supplied.get("backtracking_factor", 2.0)
-    )
+    # A 1.5 growth factor on a rejected outer trial wastes less of the step
+    # than doubling does, and measured better on the tuned 0808 benchmark
+    # settings. This changes only the accepted outer-trial policy, not the
+    # corrected 0821 momentum bookkeeping.
+    backtracking_factor = float(supplied.get("backtracking_factor", 1.5))
     step_growth = float(supplied.get("step_growth", 1.1))
     line_search_tolerance = float(
         supplied.get("line_search_tolerance", 1e-12)
@@ -157,6 +159,11 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
     )
     norm_iterations = int(supplied.get("norm_iterations", 20))
     prox_tolerance = float(supplied.get("prox_tolerance", 1e-8))
+    # Early outer iterations do not benefit from driving the prox much below
+    # 1e-2; a tighter ceiling mostly adds inner work without changing the
+    # accepted outer step. Keep the corrected algorithm and relax only the
+    # inexact-prox target used during the outer solve.
+    prox_target_ceiling = float(supplied.get("prox_target_ceiling", 1e-2))
     prox_max_iterations = int(
         supplied.get("prox_max_iterations", 1000)
     )
@@ -169,7 +176,7 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
         "topk": "partial_sort",
     }.get(pava_backend, pava_backend)
     prox_oracle = str(
-        supplied.get("prox_oracle", "auto")
+        supplied.get("prox_oracle", "dual_lbfgs")
     ).lower().replace("-", "_")
     prox_oracle = {
         "general": "dual_fista",
@@ -180,9 +187,6 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
         "l_bfgs": "dual_lbfgs",
         "l_bfgs_b": "dual_lbfgs",
         "dual_lbfgsb": "dual_lbfgs",
-        "budget_scalar": "budget",
-        "majorization": "majorization_qp",
-        "qp": "majorization_qp",
     }.get(prox_oracle, prox_oracle)
     prox_adaptive_restart = bool(
         supplied.get("prox_adaptive_restart", True)
@@ -195,15 +199,6 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
     )
     prox_lbfgs_fallback = bool(
         supplied.get("prox_lbfgs_fallback", True)
-    )
-    majorization_max_iterations = int(
-        supplied.get("majorization_max_iterations", 20_000)
-    )
-    majorization_polish = bool(
-        supplied.get("majorization_polish", True)
-    )
-    majorization_max_lift_variables = int(
-        supplied.get("majorization_max_lift_variables", 5_000_000)
     )
     raw_cutoff = supplied.get("dual_bound_cutoff")
     dual_bound_cutoff = (
@@ -223,6 +218,7 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
         "backtracking_factor": backtracking_factor,
         "step_growth": step_growth,
         "prox_tolerance": prox_tolerance,
+        "prox_target_ceiling": prox_target_ceiling,
     }
     for name, value in positive.items():
         if not math.isfinite(value) or value <= 0.0:
@@ -260,11 +256,6 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
             "prox_lbfgs_max_line_search",
             prox_lbfgs_max_line_search,
         ),
-        ("majorization_max_iterations", majorization_max_iterations),
-        (
-            "majorization_max_lift_variables",
-            majorization_max_lift_variables,
-        ),
         ("restart_period", restart_period),
         ("restart_check_interval", restart_check_interval),
     ):
@@ -274,17 +265,9 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
         raise ValueError(
             "pava_backend must be 'full_sort' or 'partial_sort'"
         )
-    if prox_oracle not in {
-        "auto",
-        "pava",
-        "budget",
-        "dual_fista",
-        "dual_lbfgs",
-        "majorization_qp",
-    }:
+    if prox_oracle not in {"dual_fista", "dual_lbfgs"}:
         raise ValueError(
-            "prox_oracle must be 'auto', 'pava', 'budget', "
-            "'dual_fista', 'dual_lbfgs', or 'majorization_qp'"
+            "prox_oracle must be 'dual_fista' or 'dual_lbfgs'"
         )
     if restart_strategy not in {
         "none",
@@ -341,6 +324,7 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
             restart_function_tolerance=restart_function_tolerance,
             norm_iterations=norm_iterations,
             prox_tolerance=prox_tolerance,
+            prox_target_ceiling=prox_target_ceiling,
             prox_max_iterations=prox_max_iterations,
             pava_backend=pava_backend,
             prox_oracle=prox_oracle,
@@ -350,11 +334,6 @@ def _settings(options: Optional[Any]) -> Tuple[_Settings, int]:
                 prox_lbfgs_max_line_search
             ),
             prox_lbfgs_fallback=prox_lbfgs_fallback,
-            majorization_max_iterations=majorization_max_iterations,
-            majorization_polish=majorization_polish,
-            majorization_max_lift_variables=(
-                majorization_max_lift_variables
-            ),
             dual_bound_cutoff=dual_bound_cutoff,
             warm_start=warm_start,
             resume_acceleration=resume_acceleration,
@@ -464,74 +443,22 @@ def _prox(
         gamma,
         tolerance=tolerance,
     )
-    if hasattr(result, "constraint_multiplier"):
-        point = result.x
-        multiplier = result.constraint_multiplier
-        pava_calls = result.pava_calls
-        constraint_violation = result.constraint_violation
-        scaled_violation = result.scaled_constraint_violation
-        fixed_point_residual = result.fixed_point_residual
-        restarts = result.restarts
-        inner_backtracks = result.line_search_backtracks
-        warm_started = result.warm_started
-        method = result.method
-        prox_converged = bool(result.converged)
-        function_evaluations = int(
-            getattr(result, "function_evaluations", pava_calls)
-        )
-        fallback_used = bool(
-            getattr(result, "fallback_used", False)
-        )
-        optimizer_status = str(
-            getattr(result, "optimizer_status", "")
-        )
-    else:
-        point = result.x
-        multiplier = result.multiplier
-        if (
-            point is None
-            or multiplier is None
-            or not result.has_solution
-        ):
-            raise RuntimeError(
-                "majorization QP prox returned no finite solution "
-                f"(status={result.status})"
-            )
-        pava_calls = 0
-        constraint_violation = (
-            math.inf
-            if result.linear_constraint_violation is None
-            else result.linear_constraint_violation
-        )
-        scaled_violation = constraint_violation
-        residuals = [
-            value
-            for value in (
-                result.primal_residual,
-                result.dual_residual,
-                result.maximum_constraint_violation,
-            )
-            if value is not None
-        ]
-        fixed_point_residual = (
-            max(residuals) if residuals else math.inf
-        )
-        restarts = 0
-        inner_backtracks = 0
-        warm_started = result.warm_start_used
-        method = oracle.method
-        residual_tolerance = max(10.0 * tolerance, 1e-8)
-        feasibility_tolerance = max(tolerance, 1e-9)
-        prox_converged = bool(
-            result.converged
-            and fixed_point_residual <= residual_tolerance
-            and result.maximum_constraint_violation is not None
-            and result.maximum_constraint_violation
-            <= feasibility_tolerance
-        )
-        function_evaluations = int(result.iterations)
-        fallback_used = False
-        optimizer_status = str(result.status)
+    point = result.x
+    multiplier = result.constraint_multiplier
+    pava_calls = result.pava_calls
+    constraint_violation = result.constraint_violation
+    scaled_violation = result.scaled_constraint_violation
+    fixed_point_residual = result.fixed_point_residual
+    restarts = result.restarts
+    inner_backtracks = result.line_search_backtracks
+    warm_started = result.warm_started
+    method = result.method
+    prox_converged = bool(result.converged)
+    function_evaluations = int(
+        getattr(result, "function_evaluations", pava_calls)
+    )
+    fallback_used = bool(getattr(result, "fallback_used", False))
+    optimizer_status = str(getattr(result, "optimizer_status", ""))
     return (
         np.asarray(point, dtype=float).reshape(-1),
         {
@@ -783,7 +710,7 @@ def _solve(
             factor_y,
         )
         gradient_evaluations += 1
-        old_lipschitz = lipschitz
+        previous_lipschitz = lipschitz
         trial_lipschitz = max(
             lipschitz / settings.step_growth,
             omega / 1e6,
@@ -795,13 +722,19 @@ def _solve(
         if prox_oracle.exact_budget:
             prox_target = settings.prox_tolerance
         elif initial_residual is None:
-            prox_target = max(settings.prox_tolerance, 1e-3)
+            prox_target = max(
+                settings.prox_tolerance,
+                settings.prox_target_ceiling,
+            )
         elif relative_residual <= 10.0 * settings.tolerance:
             prox_target = settings.prox_tolerance
         else:
             prox_target = max(
                 settings.prox_tolerance,
-                min(1e-3, 0.1 * relative_residual),
+                min(
+                    settings.prox_target_ceiling,
+                    0.1 * relative_residual,
+                ),
             )
         for _ in range(settings.max_backtracks):
             prox_oracle.restore(committed_prox_state)
@@ -1070,16 +1003,9 @@ def _solve(
             restart_thresholds.append(restart_threshold)
             restart_epoch_age = 0
         else:
-            next_momentum = 0.5 * (
-                1.0
-                + math.sqrt(
-                    1.0
-                    + 4.0
-                    * (lipschitz / old_lipschitz)
-                    * momentum
-                    * momentum
-                )
-            )
+            # Classical corrected FISTA momentum. Its Lyapunov proof applies
+            # when the accepted curvature sequence is nondecreasing.
+            next_momentum = _fista_momentum(momentum)
             next_y = trial_x + (
                 (momentum - 1.0) / next_momentum
             ) * (trial_x - x)
@@ -1415,12 +1341,17 @@ def _solve(
         "prox_lbfgs_fallback_calls": int(
             prox_lbfgs_fallback_calls
         ),
+        "prox_newton_enabled": bool(prox_oracle.semismooth_newton),
         "pava_backend": settings.pava_backend,
         "prox_oracle_requested": settings.prox_oracle,
         "prox_oracle_used": prox_oracle.method,
         "prox_exact_budget_fast_path": bool(prox_oracle.exact_budget),
         "prox_operator_norm_squared": float(prox_oracle.lipschitz),
         "prox_operator_norm_kind": prox_oracle.lipschitz_kind,
+        "prox_inner_momentum_rule": "curvature_synchronous_fista",
+        "prox_inner_curvature_policy": (
+            "decrease_then_backtrack_with_synchronized_extrapolation"
+        ),
         "prox_adaptive_restart": settings.prox_adaptive_restart,
         "prox_lbfgs_memory": int(settings.prox_lbfgs_memory),
         "prox_lbfgs_max_line_search": int(
@@ -1429,14 +1360,8 @@ def _solve(
         "prox_lbfgs_fallback_enabled": bool(
             settings.prox_lbfgs_fallback
         ),
-        "majorization_max_iterations": (
-            settings.majorization_max_iterations
-        ),
-        "majorization_polish": settings.majorization_polish,
-        "majorization_max_lift_variables": (
-            settings.majorization_max_lift_variables
-        ),
         "prox_tolerance": settings.prox_tolerance,
+        "prox_target_ceiling": settings.prox_target_ceiling,
         "prox_max_iterations": settings.prox_max_iterations,
         "prox_multiplier_available": True,
         "maximum_prox_equality_residual": float(
@@ -1538,6 +1463,12 @@ def _solve(
         "objective_evaluations": int(objective_evaluations),
         "line_search_backtracks": int(backtracks),
         "line_search_mode": "smooth_quadratic_majorization",
+        "momentum_rule": "classical_fista",
+        "algorithm_variant": "corrected",
+        "accelerated_rate_theory_scope": (
+            "nondecreasing_accepted_curvature_exact_or_"
+            "summably_inexact_prox_without_heuristic_restart"
+        ),
         "backtracking_factor": settings.backtracking_factor,
         "step_growth": settings.step_growth,
         "line_search_tolerance": settings.line_search_tolerance,
@@ -1598,19 +1529,10 @@ def _solve(
         "solve_seconds": float(solve_seconds),
         "total_seconds": float(setup_seconds + solve_seconds),
         "complexity_per_iteration": (
-            "O(d*r + warm_started_sparse_QP(d*k))"
-            if prox_oracle.method == "majorization_qp_osqp"
-            else (
-                (
-                    "O(d*r + prox_lbfgs_evaluations*"
-                    "(nnz(C)+PAVA(d,k)+memory*rows(C)))"
-                )
-                if prox_oracle.method == "row_scaled_dual_lbfgsb"
-                else (
-                    "O(d*r + prox_inner_iterations*"
-                    "(nnz(C)+PAVA(d,k)))"
-                )
-            )
+            "O(d*r + prox_lbfgs_evaluations*"
+            "(nnz(C)+PAVA(d,k)+memory*rows(C)))"
+            if prox_oracle.method == "row_scaled_dual_lbfgsb"
+            else "O(d*r + prox_inner_iterations*(nnz(C)+PAVA(d,k)))"
         ),
         "constraint_scope": (
             "single_exact_budget_equality"
@@ -1637,15 +1559,11 @@ def solve_fista(
     settings, threads = _settings(options)
     if threads:
         try:
-            from threadpoolctl import threadpool_info, threadpool_limits
-        except ImportError as error:
+            thread_context = limit_blas_threads(threads)
+        except RuntimeError as error:
             raise RuntimeError(
                 "threadpoolctl is required to enforce FISTA thread limits"
             ) from error
-        thread_context = threadpool_limits(
-            limits=threads,
-            user_api="blas",
-        )
     else:
         thread_context = nullcontext()
 
@@ -1655,61 +1573,26 @@ def solve_fista(
         if len(B.shape) != 2:
             raise ValueError("B must be a matrix")
         dimension, rank = map(int, B.shape)
-        if settings.prox_oracle == "majorization_qp":
-            from .majorization_qp import MajorizationQPOracle
-
-            prox_oracle = MajorizationQPOracle(
-                instance.C,
-                instance.lower,
-                instance.upper,
-                int(instance.k),
-                tolerance=settings.prox_tolerance,
-                max_iterations=settings.majorization_max_iterations,
-                polish=settings.majorization_polish,
-                max_lift_variables=(
-                    settings.majorization_max_lift_variables
-                ),
-            )
-        else:
-            prox_oracle = LinearConstraintProx(
-                instance.C,
-                instance.lower,
-                instance.upper,
-                int(instance.k),
-                pava_method=settings.pava_backend,
-                tolerance=settings.prox_tolerance,
-                max_iterations=settings.prox_max_iterations,
-                adaptive_restart=settings.prox_adaptive_restart,
-                use_budget_fast_path=(
-                    settings.prox_oracle == "budget"
-                ),
-                dual_solver=(
-                    "lbfgs"
-                    if settings.prox_oracle
-                    in {"auto", "dual_lbfgs"}
-                    else "fista"
-                ),
-                lbfgs_memory=settings.prox_lbfgs_memory,
-                lbfgs_max_line_search=(
-                    settings.prox_lbfgs_max_line_search
-                ),
-                lbfgs_fallback=settings.prox_lbfgs_fallback,
-            )
-            if (
-                settings.prox_oracle == "budget"
-                and not prox_oracle.exact_budget
-            ):
-                raise ValueError(
-                    "prox_oracle='budget' requires the single exact row "
-                    "1.T @ x = 1"
-                )
-            if (
-                settings.prox_oracle == "pava"
-                and prox_oracle.rows != 0
-            ):
-                raise ValueError(
-                    "prox_oracle='pava' requires no linear rows"
-                )
+        prox_oracle = LinearConstraintProx(
+            instance.C,
+            instance.lower,
+            instance.upper,
+            int(instance.k),
+            pava_method=settings.pava_backend,
+            tolerance=settings.prox_tolerance,
+            max_iterations=settings.prox_max_iterations,
+            adaptive_restart=settings.prox_adaptive_restart,
+            use_budget_fast_path=True,
+            dual_solver=(
+                "lbfgs"
+                if settings.prox_oracle == "dual_lbfgs"
+                else "fista"
+            ),
+            lbfgs_memory=settings.prox_lbfgs_memory,
+            lbfgs_max_line_search=settings.prox_lbfgs_max_line_search,
+            lbfgs_fallback=settings.prox_lbfgs_fallback,
+            semismooth_newton=bool(_as_options(options).get("prox_newton", False)),
+        )
         if settings.initial_lipschitz is None:
             state_lipschitz = (
                 settings.warm_start.scalars.get("lipschitz")
@@ -1776,16 +1659,14 @@ def solve_fista(
             initial_lipschitz,
             lipschitz_kind,
         )
-        try:
-            from threadpoolctl import threadpool_info
-
-            threadpools = threadpool_info()
-        except ImportError:
-            threadpools = []
+        threadpools = threadpool_info()
 
     result["threads"] = threads
     result["thread_limit_kind"] = (
         "blas" if threads else "runtime_default"
+    )
+    result["threadpool_controller"] = (
+        "cached_threadpool_controller" if threads else "not_used"
     )
     result["threadpools"] = threadpools
     return result

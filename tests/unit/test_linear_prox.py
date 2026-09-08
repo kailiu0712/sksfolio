@@ -11,7 +11,7 @@ from sksfolio.relaxation.fista import (
     LinearConstraintProx,
     prox_budget_details,
 )
-from sksfolio.relaxation.pdhg.pava import prox as pava_prox
+from sksfolio.relaxation.pava import prox as pava_prox
 
 
 class LinearConstraintProxTests(unittest.TestCase):
@@ -148,6 +148,33 @@ class LinearConstraintProxTests(unittest.TestCase):
         self.assertEqual(dense.operator_storage, "dense")
         self.assertEqual(sparse_oracle.operator_storage, "sparse")
 
+    def test_both_oracles_support_sparse_operator_storage(self) -> None:
+        rng = np.random.default_rng(20260820)
+        dimension = 100
+        rows = 10
+        matrix = sparse.eye(rows, dimension, format="csr")
+        lower = np.full(rows, -np.inf)
+        upper = np.full(rows, 0.3)
+        values = rng.normal(size=dimension)
 
+        for dual_solver in ("fista", "lbfgs"):
+            with self.subTest(dual_solver=dual_solver):
+                oracle = LinearConstraintProx(
+                    matrix,
+                    lower,
+                    upper,
+                    12,
+                    tolerance=1e-8,
+                    max_iterations=2_000,
+                    use_budget_fast_path=False,
+                    dual_solver=dual_solver,
+                )
+                result = oracle.solve(values, 0.7)
+                self.assertEqual(oracle.operator_storage, "sparse")
+                self.assertTrue(result.converged)
+                self.assertLessEqual(
+                    result.scaled_constraint_violation,
+                    1e-8,
+                )
 if __name__ == "__main__":
     unittest.main()

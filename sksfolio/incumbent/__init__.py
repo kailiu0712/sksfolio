@@ -9,7 +9,6 @@ from .api import (
 )
 from .evaluation import evaluate_incumbent, sparse_objective
 from .gurobi import solve_gurobi_incumbent
-from .jump import solve_jump_incumbent
 from .mosek import solve_mosek_incumbent
 from .restricted_qp import (
     RESTRICTED_SOLVERS,
@@ -40,7 +39,6 @@ __all__ = [
     "perspective_activations",
     "solve_incumbent",
     "solve_gurobi_incumbent",
-    "solve_jump_incumbent",
     "solve_mosek_incumbent",
     "solve_restricted_qp",
     "sparse_objective",

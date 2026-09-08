@@ -1,13 +1,8 @@
-"""Small end-to-end example for the public sksfolio APIs.
-
-The default run uses only NumPy, SciPy, and OSQP. Commercial relaxation
-backends and JuMP are opt-in because they require separate installations.
-"""
+"""End-to-end example for the two corrected relaxation algorithms."""
 
 from __future__ import annotations
 
 import argparse
-from typing import Any
 
 from sksfolio import solve_bnb, solve_incumbent, solve_relaxation
 from sksfolio.benchmarks.instance_generator import generate_instance
@@ -23,16 +18,6 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--solver-time-limit", type=float, default=10.0)
     result.add_argument("--bnb-time-limit", type=float, default=20.0)
     result.add_argument("--skip-bnb", action="store_true")
-    result.add_argument(
-        "--commercial",
-        action="store_true",
-        help="also run the native Python Gurobi and MOSEK relaxations",
-    )
-    result.add_argument(
-        "--jump-optimizer",
-        default=None,
-        help="also run JuMP with this optimizer, for example clarabel",
-    )
     return result
 
 
@@ -57,96 +42,27 @@ def make_problem(args: argparse.Namespace):
     )
 
 
-def show_relaxation(label: str, result: Any) -> None:
-    print(
-        f"{label:24s} status={result.status:18s} "
-        f"objective={result.objective!s:>14s} "
-        f"safe_dual={result.safe_dual_bound!s:>14s} "
-        f"seconds={result.raw.get('end_to_end_seconds')!s}"
-    )
-
-
 def main() -> None:
     args = parser().parse_args()
     problem = make_problem(args)
-    names = tuple(problem.constraint_names)
-    print(
-        "constraint stack: "
-        f"rows={problem.rows}, "
-        f"budget={sum(name == 'budget' for name in names)}, "
-        f"minimum_return={sum(name == 'minimum_return' for name in names)}, "
-        f"sectors={sum(name.startswith('sector_') for name in names)}, "
-        f"styles={sum(name.startswith('style_') for name in names)}, "
-        f"one_sided_stresses="
-        f"{sum(name.startswith('stress_') for name in names)}"
-    )
     common = {
         "tolerance": 1e-6,
         "max_iterations": 5_000,
         "time_limit": args.solver_time_limit,
         "threads": args.threads,
     }
-    methods = (
-        (
-            "fista_dual_fista",
-            "fista",
-            {
-                **common,
-                "prox_oracle": "dual_fista",
-                "restart_strategy": "gradient",
-            },
-        ),
-        (
-            "fista_dual_lbfgs",
-            "fista",
-            {
-                **common,
-                "prox_oracle": "dual_lbfgs",
-                "restart_strategy": "gradient",
-            },
-        ),
-    )
-
     relaxations = {}
-    for label, backend, options in methods:
-        result = solve_relaxation(
-            problem,
-            backend=backend,
-            pava="partial_sort",
-            options=options,
+    for algorithm in ("corrected_fista", "corrected_lbfgs"):
+        result = solve_relaxation(problem, backend=algorithm, options=common)
+        relaxations[algorithm] = result
+        print(
+            f"{algorithm:24s} status={result.status:18s} "
+            f"objective={result.objective!s:>14s} "
+            f"safe_dual={result.safe_dual_bound!s:>14s} "
+            f"seconds={result.raw.get('end_to_end_seconds')!s}"
         )
-        relaxations[label] = result
-        show_relaxation(label, result)
 
-    if args.commercial:
-        for backend in ("gurobi", "mosek"):
-            result = solve_relaxation(
-                problem,
-                backend=backend,
-                options={
-                    "tolerance": 1e-6,
-                    "time_limit": args.solver_time_limit,
-                    "threads": args.threads,
-                    "log": False,
-                },
-            )
-            show_relaxation(f"{backend}_python", result)
-
-    if args.jump_optimizer:
-        result = solve_relaxation(
-            problem,
-            backend="jump",
-            options={
-                "optimizer": args.jump_optimizer,
-                "julia_instantiate": True,
-                "tolerance": 1e-6,
-                "time_limit": args.solver_time_limit,
-                "threads": args.threads,
-            },
-        )
-        show_relaxation(f"jump_{args.jump_optimizer}", result)
-
-    root = relaxations["fista_dual_lbfgs"]
+    root = relaxations["corrected_lbfgs"]
     incumbent = solve_incumbent(
         problem,
         root,
@@ -168,10 +84,6 @@ def main() -> None:
             time_limit=args.bnb_time_limit,
             relative_gap=1e-4,
             absolute_gap=1e-8,
-            options={
-                "safe_screening": True,
-                "multi_selector_cuts": False,
-            },
         )
         print(
             f"safe_screened_bnb       status={result.status:18s} "

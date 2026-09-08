@@ -21,7 +21,7 @@ from typing import Any, Iterable
 import numpy as np
 
 from ..relaxation.problem import perspective_value
-from ..relaxation.pdhg.pava import prox as pava_prox
+from ..relaxation.pava import prox as pava_prox
 
 
 def _indices(

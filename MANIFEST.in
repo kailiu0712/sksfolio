@@ -2,17 +2,16 @@ include README.md
 include environment.yml
 include pyproject.toml
 include setup.py
-include tools/generate_native_sources.py
-recursive-include sksfolio *.py *.c *.jl *.toml
+recursive-include sksfolio *.py *.c
 recursive-include examples *.py
 recursive-include tests *.py
-recursive-include benchmarks *.py *.md *.csv
 global-exclude *.py[cod]
 global-exclude *.so
 global-exclude *.dylib
 global-exclude *.dll
 global-exclude .DS_Store
 prune build
+prune benchmarks
 prune dist
 prune output
 prune outputs

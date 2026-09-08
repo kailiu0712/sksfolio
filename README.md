@@ -1,718 +1,163 @@
 # sksfolio
 
-`sksfolio` means **sparse k-support portfolio optimization**.  The name is
-short, describes the regularizer, and the import is simply:
+`sksfolio` 求解带基数约束的稀疏 Markowitz 投资组合问题。项目当前只保留两种连续松弛算法：
 
-```python
-import sksfolio
-```
+- `corrected_fista`：外层 corrected FISTA，约束近端子问题使用 corrected dual-FISTA；
+- `corrected_lbfgs`：相同外层算法，近端子问题优先使用 L-BFGS-B，并用独立残差检查；检查失败时安全回退到 corrected dual-FISTA。
 
-The package solves the continuous long-only perspective relaxation
+两种算法求解同一个 long-only perspective relaxation：
 
 ```text
-minimize    0.5 ||B' x||^2 + omega g_k(x) - rho mu' x
+minimize    0.5 ||B' x||² + omega g_k(x) - rho mu' x
 subject to  lower <= C x <= upper
+            x in dom(g_k) = {x : 0 <= x <= 1, 1' x <= k}
 ```
 
-where
+这里的 `lower <= C x <= upper` 是**向量形式**，不是只有一条标量约束；`C` 的每一行都代表一条线性约束，并有各自的下界和上界。默认的 `hybrid` 问题生成器（`k >= 5`）共有 **15 行线性约束**：
+
+| 约束类型 | `C` 的行数 | 展开后的标量形式 |
+| --- | ---: | ---: |
+| 预算等式 | 1 | 1 条等式 |
+| 最低收益 | 1 | 1 条单边不等式 |
+| 行业敞口 | 5 | 10 条不等式 |
+| 风格因子敞口 | 3 | 6 条不等式 |
+| 压力损失 | 5 | 5 条单边不等式 |
+| 合计 | **15 行** | **1 条等式 + 22 条不等式** |
+
+因此，代码按矩阵行计是 15 条；若把等式也写成两个不等式，则展开后共 24 条不等式。一般情况下，实际行数由输入的 `C.shape[0]` 决定。
+
+其中 `g_k` 是基数约束的闭 perspective 凸包，并以扩展值形式包含 `0 <= x <= 1` 和 `1' x <= k` 的 long-only perspective 定义域；这些定义域约束不存入 `C`，也不计入上面的 15 行。默认全额投资模型中，在 `x >= 0`、`1' x = 1`、`k >= 1` 下，`x <= 1` 和 `1' x <= k` 是冗余的。PAVA、Fenchel 安全对偶证书和问题模型由两个算法共享。
+
+## 后续流程
+
+连续松弛之后的流程继续保留：
 
 ```text
-g_k(x) = min 0.5 sum_i x_i^2 / z_i
-         s.t. 0 <= x_i <= z_i <= 1, sum_i z_i <= k.
+corrected relaxation
+        ↓
+OSQP 固定支撑 QP → 可行稀疏 incumbent（上界）
+        ↓
+Fenchel safe screening
+        ↓
+certificate-driven branch-and-bound
 ```
 
-The budget equality `1' x = 1`, minimum return, sector bands, style
-exposures, and one-sided stress limits are rows of `C`; equal lower and upper
-bounds encode equalities.
+因此，算法清理不会移除 incumbent、screening 或自定义 BnB。
 
-## What can run
-
-The public API exposes each layer separately, so experiments do not need to
-modify solver internals:
-
-| Layer | Implementations | Intended use |
-| --- | --- | --- |
-| Continuous relaxation | FISTA with `dual_fista` or `dual_lbfgs` constrained proximal oracles | General interval rows kept inside the proximal step |
-| Continuous relaxation | native Python Gurobi and MOSEK | Commercial conic-relaxation references |
-| Continuous relaxation | Julia/JuMP with a caller-selected optimizer | Wrapper-language and solver comparison |
-| Sparse incumbent | OSQP fixed-support QP refits | Feasible upper bounds for rounding and local search |
-| Global solve | certificate-driven BnB with constraint-aware screening | Search over binary selectors |
-| Integer references | native Python and Julia/JuMP perspective-strengthened Gurobi MIQCP and MOSEK MISOCP | Independent commercial comparisons |
-
-## Installation
-
-Install the first-order package from the source directory with:
+## 安装
 
 ```bash
 python -m pip install .
 ```
 
-OSQP is a base dependency because it is the default fixed-support incumbent
-solver. A reproducible student environment is also included:
+核心依赖是 NumPy、SciPy、OSQP 和 threadpoolctl。可选的 C 扩展只加速 partial-sort PAVA；没有编译扩展时会自动使用 NumPy 实现。
 
-```bash
-conda env create -f environment.yml
-conda activate sksfolio
-```
-
-Gurobi and MOSEK remain optional because their packages and licenses are
-commercial:
-
-```bash
-python -m pip install ".[gurobi]"
-python -m pip install ".[mosek]"
-python -m pip install ".[julia]"       # Python-to-Julia bridge
-python -m pip install ".[commercial]"  # both solvers and Julia wrappers
-```
-
-The JuMP paths also require a Julia installation. Gurobi and MOSEK require
-their vendor packages and valid licenses in whichever language invokes them.
-
-Run `python examples/student_quickstart.py --help` for a small constrained
-example covering both FISTA proximal oracles, OSQP incumbents, safe-screened
-BnB, and optional commercial or JuMP continuous-relaxation solves.
-For example:
-
-```bash
-python examples/student_quickstart.py
-python examples/student_quickstart.py --commercial
-python examples/student_quickstart.py --jump-optimizer clarabel
-```
-
-## Layout
-
-```text
-sksfolio/
-  relaxation/
-    fista/
-      solver.py
-      _native_solver.c
-      linear_prox.py
-    gurobi/
-      python.py
-      julia.py
-    mosek/
-      python.py
-      julia.py
-    jump/
-      julia.py
-    certificate.py
-    native.py
-    problem.py
-    result.py
-    state.py
-  incumbent/
-    api.py
-    evaluation.py
-    support.py
-    restricted_qp.py
-    gurobi.py
-    jump.py
-    mosek.py
-    result.py
-    state.py
-  screening/
-    api.py
-    oracle.py
-    result.py
-  bnb/
-    solver.py
-    bounds.py
-    cuts.py
-    node_dual.py
-    perspective.py
-    propagation.py
-    result.py
-    types.py
-  benchmarks/
-    bertsimas_cory_wright.py
-    instance_generator.py
-    run_relaxations.py
-    run_student_suite.py
-tests/
-  unit/
-  numerical/
-  integration/
-benchmarks/
-  bertsimas_cory_wright_2022/
-```
-
-“Python” means a solver's native Python API; it is not a naive reference
-implementation. The relaxation backends used in the student workflow are:
-
-```text
-fista
-gurobi
-mosek
-jump
-```
-
-`gurobi` and `mosek` select the native Python APIs. The explicit
-`gurobi.python`, `gurobi.julia`, `mosek.python`, and `mosek.julia` names
-remain available when the wrapper language must be selected.
-`jump` is an alias for `jump.julia` and lets the caller select any
-installed JuMP optimizer that supports the exact rotated-cone model.
-
-## Recommended default
-
-Calling `solve_relaxation` without a backend uses the benchmark-selected
-configuration from the included experiments:
+## 连续松弛 API
 
 ```python
 from sksfolio import solve_relaxation
 
+fista_result = solve_relaxation(
+    problem,
+    backend="corrected_fista",
+    options={"tolerance": 1e-7, "max_iterations": 5_000},
+)
+
+lbfgs_result = solve_relaxation(
+    problem,
+    backend="corrected_lbfgs",
+    options={"tolerance": 1e-7, "max_iterations": 5_000},
+)
+
+print(lbfgs_result.objective)
+print(lbfgs_result.safe_dual_bound)
+print(lbfgs_result.dual_certificate.verify(problem))
+```
+
+默认算法是 `corrected_lbfgs`：
+
+```python
 result = solve_relaxation(problem)
 ```
 
-This selects FISTA's benchmark-chosen Python orchestration together with line
-search, automatic proximal-oracle dispatch, partial-sort PAVA, and gradient
-restart. The expensive kernels use compiled numerical code when available:
-partial-sort PAVA has a bundled C implementation with a NumPy fallback,
-L-BFGS-B and sparse products are SciPy, and dense products use BLAS. The
-automatic oracle uses warm-started split-dual L-BFGS-B on the constrained
-benchmark instances, with dual FISTA as a safeguarded fallback.
-The selected defaults are
-also exported as `DEFAULT_BACKEND`, `DEFAULT_PAVA`,
-`DEFAULT_FISTA_RESTART`, and `DEFAULT_FISTA_PROX_ORACLE`;
-`DEFAULT_IMPLEMENTATION` is `"auto"`.
-
-## Feasible sparse incumbents and upper bounds
-
-The continuous relaxation supplies a lower bound. A branch-and-bound upper
-bound must instead come from a portfolio that satisfies the original
-cardinality and every original row. The incumbent layer performs that check
-independently:
+公共算法注册表严格为：
 
 ```python
-from sksfolio import solve_incumbent, solve_relaxation
+from sksfolio import CORRECTED_ALGORITHMS
 
-relaxation = solve_relaxation(problem)
-incumbent = solve_incumbent(problem, relaxation)
-
-print(incumbent.upper_bound)
-print(incumbent.raw["relaxation_lower_bound"])
-print(incumbent.raw["safe_gap"])
-```
-
-With binary selectors, the perspective penalty is simply
-`0.5 * ||x||^2`. For a proposed support `S`, every heuristic solves the same
-strongly convex QP with at most `k` variables and the full constraints
-`lower <= C[:, S] x[S] <= upper`. Any feasible refit is a valid upper bound;
-an infeasible rounded point is discarded. The public incumbent and BnB
-defaults use `restricted_solver="osqp"`. Select `"auto"` explicitly to use
-OSQP when available and fall back to the SciPy path if OSQP is unavailable or
-raises during a solve.
-
-The methods are:
-
-- `topk`: one relaxation-ranked support and one QP refit;
-- `binary_prox`: exact unconstrained binary-perspective proximal support;
-- `randomized`: fixed-cardinality dependent rounding and QP refits;
-- `prune`: solve on a screened pool and remove assets while preserving
-  feasibility;
-- `discrete_first_order`: the constrained portfolio support update inspired
-  by Bertsimas--Cory-Wright;
-- `swap`: reduced-cost one-for-one support search;
-- `fast`, `auto`, and `quality`: staged combinations with increasing effort.
-
-`auto` returns a cheap feasible candidate as soon as possible, then uses a
-few dependent-rounding and swap attempts. The result has its own
-`IncumbentState`, and fixed-in/fixed-out indices make the same API reusable
-at branch-and-bound child nodes:
-
-```python
-child_incumbent = solve_incumbent(
-    child_problem,
-    child_relaxation,
-    warm_start=parent_incumbent,
-    required_assets=(17,),
-    forbidden_assets=(42,),
-    time_limit=0.05,
+assert CORRECTED_ALGORITHMS == (
+    "corrected_fista",
+    "corrected_lbfgs",
 )
 ```
 
-For commercial reference solves, `solve_gurobi_incumbent` builds the full
-binary perspective MIQCP and `solve_mosek_incumbent` builds its equivalent
-binary MISOCP. Both use $x_i^2 \leq t_i z_i$, accept the same heuristic result
-as a MIP start, polish its returned support with OSQP, and independently check
-the resulting portfolio. Gurobi's weaker activation-only MIQP remains
-available with `options={"formulation": "miqp"}`.
-
-`solve_jump_incumbent` sends the same perspective-strengthened binary model
-through Julia/JuMP. The optimizer is a named argument rather than an entry in
-`options`:
-
-```python
-from sksfolio import (
-    solve_gurobi_incumbent,
-    solve_jump_incumbent,
-    solve_mosek_incumbent,
-)
-
-native_gurobi = solve_gurobi_incumbent(problem, warm_start=incumbent)
-native_mosek = solve_mosek_incumbent(problem, warm_start=incumbent)
-jump_gurobi = solve_jump_incumbent(
-    problem,
-    optimizer="gurobi",
-    warm_start=incumbent,
-    options={"julia_instantiate": True},
-)
-jump_mosek = solve_jump_incumbent(
-    problem,
-    optimizer="mosek",
-    warm_start=incumbent,
-    options={"julia_instantiate": True},
-)
-```
-
-All four calls preserve every row of `lower <= C x <= upper`. Returned
-portfolios are checked in Python before being exposed as upper bounds. These
-are exact mixed-integer reference formulations; they are distinct from the
-continuous `solve_relaxation(..., backend="jump")` interface. The complete
-matched benchmark is documented below.
-
-The default was selected using end-to-end relaxation time, not just proximal
-time. This is an empirical policy rather than a universal performance claim;
-hardware, sparsity, constraint geometry, tolerances, and warm starts can
-change the ranking. Both documented FISTA proximal paths return a recomputable
-Fenchel dual certificate.
-
-## Constraint-aware safe screening
-
-The same dual certificate can safely screen binary selectors even when the
-portfolio has arbitrary interval rows `lower <= C x <= upper`. Constraints
-must not be ignored: their multiplier changes every asset's reduced score.
-For factor and row multipliers `p` and `q`, the oracle forms
-
-```text
-r = rho mu - B p - C' q
-```
-
-and the bounded-perspective score
-
-```text
-psi(r_i) = 0                         if r_i <= 0
-           r_i^2 / (2 omega)         if 0 < r_i < omega
-           r_i - omega / 2           if r_i >= omega.
-```
-
-At a node with selectors fixed in on `I`, fixed out on `O`, free set `R`,
-and remaining capacity `K = k - |I|`, one certificate gives the conditional
-lower bound
-
-```text
--0.5 ||p||^2 - support_[lower,upper](q)
-- sum_{i in I} psi(r_i) - TopSum_K(psi(r_R)).
-```
-
-The include and exclude bounds for every free asset are then obtained by a
-single top-`K` replacement pass. Computing `B p + C' q` costs
-`O(d rank + nnz(C))`; screening all assets costs another `O(d)` with partial
-selection. No conditional relaxation solve is required.
-
-```python
-from sksfolio import safe_screen, solve_incumbent, solve_relaxation
-
-relaxation = solve_relaxation(problem)
-incumbent = solve_incumbent(problem, relaxation)
-screen = safe_screen(problem, relaxation, incumbent)
-
-print(screen.fixed_zero)       # selectors safely fixed to zero
-print(screen.fixed_one)        # selectors safely fixed to one
-print(screen.node_lower_bound)
-print(screen.prunable)
-```
-
-The API also accepts `forced_one` and `forced_zero`, cascades newly implied
-fixings, and `FenchelScreeningOracle.no_good_cut` implements cutoff-dependent
-multi-selector cuts. A parent certificate remains valid at every descendant;
-re-solving the node relaxation only strengthens screening.
-
-The theorem is safe in exact arithmetic for any dual-feasible multipliers,
-so an approximate FISTA iterate is sufficient. The package uses strict cutoff
-tests and a conservative relative margin by default, but its ordinary
-floating-point certificates are not directed-rounding proofs.
-For formally certified BnB pruning, use interval evaluation or an explicit
-rounding-error bound. A fixed-in selector means `z_i = 1`; it does not imply
-that the corresponding portfolio weight is strictly positive.
-
-## Exact branch-and-bound
-
-`solve_bnb` solves the original binary sparse Markowitz model with every
-constraint `lower <= C x <= upper`. In exact arithmetic, full tree closure
-with zero requested gap proves global optimality. Each node uses a
-recomputable Fenchel certificate for a safe lower bound, while every upper
-bound is independently checked against the cardinality and all rows.
-
-Multi-selector cuts record the complete non-root fixing pattern whenever its
-conditional lower bound exceeds the incumbent; the root fixings are shared by
-all cuts. The cut pool removes dominated patterns and applies cascading unit
-propagation at later nodes. Root safe screening, cardinality propagation,
-inexpensive row-feasibility checks, and cached fixed-support QPs reduce the
-tree further. A precomputed relaxation and incumbent can be supplied as warm
-starts; internally, restricted QPs reuse the best portfolio and node dual
-polishing reuses a small certificate pool.
+## 完整求解流程
 
 ```python
 from sksfolio import solve_bnb, solve_incumbent, solve_relaxation
 
-relaxation = solve_relaxation(problem)
-incumbent = solve_incumbent(problem, relaxation)
+relaxation = solve_relaxation(problem, "corrected_lbfgs")
+incumbent = solve_incumbent(
+    problem,
+    relaxation,
+    restricted_solver="osqp",
+)
 result = solve_bnb(
     problem,
     relaxation=relaxation,
-    incumbent=incumbent,
-    relative_gap=0.0,
-    absolute_gap=0.0,
+    incumbent=incumbent if incumbent.feasible else None,
+    restricted_solver="osqp",
 )
-
-print(result.status, result.upper_bound, result.lower_bound)
-print(result.support, result.nodes_processed)
-print(result.raw["cut_statistics"])
 ```
 
-The measured default leaves multi-selector cuts off because their Python
-propagation overhead currently outweighs their node reduction on the bundled
-calibration cases. Enable the cut-and-shrink variant with
-`options={"multi_selector_cuts": True}`; every accepted cut is still retained
-as a safe, independently inspectable proof object in the result.
+`safe_dual_bound` 是连续松弛下界；incumbent 的 `upper_bound` 来自满足原始基数与线性约束的稀疏组合。BnB 使用这两个界、安全筛选和节点对偶更新推进搜索。
 
-The aliases `solve_bnb` and `solve_branch_and_bound` are identical. A time or
-node limit returns the best feasible portfolio and the surviving global lower
-bound rather than claiming optimality. As with safe screening, the current
-implementation is safe in exact arithmetic and uses conservative floating-point
-margins, but it is not yet a directed-rounding certificate.
+## 命令行示例
 
-Run the complete matched benchmark with both FISTA proximal oracles, native
-Gurobi and MOSEK relaxations, a configurable JuMP relaxation, the OSQP
-incumbent, safe-screened BnB, and both native and JuMP exact references:
+运行两个 corrected 算法：
 
 ```bash
-sksfolio-student-benchmark \
-  --dimension 5000 --rank 50 --k 250 \
-  --sectors 10 --styles 8 --stresses 10 \
-  --threads 1 --seed 17 \
-  --relative-gap 1e-4 --absolute-gap 1e-8 \
-  --relaxation-time-limit 600 --mip-time-limit 600 \
-  --jump-optimizer clarabel \
-  --jump-mip-optimizer gurobi --jump-mip-optimizer mosek \
-  --output results/student-d5000-k250.json
+python -m sksfolio.benchmarks.run_corrected_algorithms \
+  --dimension 100 --rank 10 --k 10
 ```
 
-The JSON separates continuous relaxations, shared exact-solve preprocessing,
-and exact searches. Continuous solvers receive no warm start. Exact solvers
-receive the same independently checked OSQP incumbent, thread count, time
-limit, and absolute stopping cutoff. The exact group contains custom BnB,
-native Python Gurobi and MOSEK, and the requested Gurobi and MOSEK JuMP
-wrappers. The Gurobi references use the binary perspective MIQCP and the
-MOSEK references use its equivalent binary perspective MISOCP.
-
-A checked example report and the corresponding JSON filenames are in
-`benchmarks/RESULTS_v0.9.md`.
-
-For a correctness check before scaling up, use a small instance, request full
-tree closure, and repeat several seeds:
+运行完整后续流程：
 
 ```bash
-sksfolio-student-benchmark \
-  --dimension 20 --rank 5 --k 4 --seed 17 \
-  --sectors 4 --styles 2 --stresses 3 \
-  --threads 1 --relative-gap 0 --absolute-gap 0 \
-  --relaxation-time-limit 120 --mip-time-limit 120 \
-  --jump-optimizer clarabel \
-  --jump-mip-optimizer gurobi --jump-mip-optimizer mosek \
-  --output results/student-correctness-seed17.json
+python -m sksfolio.benchmarks.run_bnb \
+  --relaxation-backend corrected_lbfgs \
+  --dimension 100 --rank 10 --k 10
 ```
 
-Agreement should be judged from objectives and valid bounds only when the
-reported statuses justify it. Wall times are machine- and license-dependent;
-the solvers use different wrappers, formulations, and internal presolve, and
-one seed is not evidence that any solver dominates. For a performance table,
-repeat the same command over several seeds and dimensions and report medians
-together with timeout counts. The package does not claim that its BnB will
-generally beat Gurobi or MOSEK.
+也可以运行教学示例：
 
-## Python and compiled implementations
-
-FISTA has a source-Python module and a complete Cython-generated solver
-module. The generated C source is included in the package, so building the
-extension from source needs a C compiler but does not require Cython. Select
-the implementation independently of the proximal-oracle choice:
-
-```python
-from sksfolio import native_availability, native_available, solve_relaxation
-
-print(native_availability())
-print(native_available("fista"))
-
-fast = solve_relaxation(problem, backend="fista", implementation="auto")
-reference = solve_relaxation(
-    problem,
-    backend="fista",
-    implementation="python",
-)
-required_native = solve_relaxation(
-    problem,
-    backend="fista",
-    implementation="native",
-)
+```bash
+python examples/student_quickstart.py --dimension 80 --rank 10 --k 8
 ```
 
-`auto` uses the matched benchmark policy, which currently selects `python`.
-The whole-module Cython path showed no robust improvement in the bundled
-experiments because the expensive numerical kernels are already compiled.
-`native` requires the extension and raises an error rather than falling back
-silently. `python`
-always uses the readable source module. The result records the actual choice
-in `result.raw["implementation"]` and whether it came from the automatic
-policy in `result.raw["implementation_selection"]`.
-Use `implementation` for FISTA; choose the Python or Julia wrapper for a
-commercial solver through its backend name.
-
-The native module compiles the complete FISTA control flow, including the
-iteration loops, line searches, restart tests, proximal orchestration, and
-safe-bound checkpoints. They still call NumPy/BLAS for array operations and
-SciPy's native L-BFGS-B implementation for FISTA's default constrained
-proximal solve. This is Cython-generated control code, not yet a fully typed,
-GIL-free numerical kernel; the NumPy, SciPy, and BLAS dependencies therefore
-remain part of the native path.
-
-## Restart state for branch-and-bound
-
-Every successful solve exposes a versioned `RelaxationState` through
-`result.state`. It stores the primal portfolio, factor and linear-row duals
-in the original problem coordinates, and backend-specific proximal and step
-state. A state can be passed directly, or a previous result can be passed and
-coerced automatically:
-
-```python
-from sksfolio import RelaxationState, solve_relaxation
-
-root = solve_relaxation(root_problem, backend="fista")
-child = solve_relaxation(
-    child_problem,
-    backend="fista",
-    warm_start=root,
-)
-
-root.state.save("root-node-state.npz")
-restored = RelaxationState.load("root-node-state.npz")
-child = solve_relaxation(child_problem, warm_start=restored)
-
-print(child.safe_dual_bound)    # always a weak-duality lower bound
-print(child.primal_upper_bound) # None until child.x is feasible
-print(child.primal_safe_gap)    # None unless both bounds are available
-```
-
-Dimension and `k` are checked before reuse. Linear-row multipliers are
-matched by unique constraint names rather than row position; new child rows
-start with zero multipliers and removed rows are discarded. The parent
-portfolio is allowed to violate newly added child rows. Acceleration is
-restarted by default, while useful primal, dual, proximal, and step-size
-information is retained, making the initialization safe for a new
-branch-and-bound node.
-
-If a child has no separately known feasible anchor and its
-`feasible_anchor` is merely the parent point, construct it with
-`anchor_must_be_feasible=False`. The long-only box and perspective-budget
-domain are still validated; only the requirement that the initialization
-satisfy every new linear row is relaxed.
-
-The estimator wrapper can reuse its preceding fitted state automatically:
-
-```python
-from sksfolio import PerspectiveRelaxation
-
-estimator = PerspectiveRelaxation(
-    backend="fista",
-    implementation="auto",
-    warm_start=True,
-)
-estimator.fit(root_problem)
-estimator.fit(child_problem)  # reuses estimator.state_
-```
-
-Alternatively, pass an explicit state with
-`estimator.fit(child_problem, warm_start=root.state)`. State archives use a
-non-pickle NPZ format and can be moved between the Python and native FISTA
-implementations or used as primal starts by the commercial and JuMP wrappers.
-
-## FISTA with constrained proximal oracles
-
-FISTA keeps every interval row inside its proximal subproblem:
+## 项目结构
 
 ```text
-minimize_x  0.5 ||x - v||^2 + gamma omega G_k(x)
-subject to  lower <= C x <= upper.
+sksfolio/
+  relaxation/
+    api.py              # 仅注册两个 corrected 算法
+    fista/               # 外层 FISTA 与两种约束近端 oracle
+    pava/                # 共享 perspective prox
+    safe_dual.py         # Fenchel 安全下界
+    problem.py
+    state.py
+  incumbent/             # OSQP/SciPy 固定支撑 QP 与启发式
+  screening/             # 安全筛选
+  bnb/                   # 自定义 branch-and-bound
+  benchmarks/
+examples/
+tests/
 ```
 
-Two warm-startable general-row oracles are exposed:
-
-- `dual_fista` solves the row-dimensional Fenchel dual by accelerated
-  proximal gradient, adaptive restart, and a local-curvature line search.
-- `dual_lbfgs` splits finite lower and upper bounds into nonnegative
-  multipliers, leaves equality multipliers free, and applies L-BFGS-B to
-  the resulting smooth bound-constrained dual.
-
-Both oracles row-normalize `C`, return multipliers in the original row
-coordinates, and use partial-sort PAVA internally to evaluate the
-perspective proximal map. One inner dual-FISTA iteration costs
-`O(nnz(C) + PAVA(d,k))`. One dual L-BFGS-B value/gradient evaluation has
-the same matrix/PAVA cost plus `O(m rows(C))` limited-memory work, with
-default memory `m = 10`. The L-BFGS path checks both its proximal-gradient
-residual and interval violation; if it does not finish, it can continue
-from the same multiplier with dual FISTA.
-
-```python
-from sksfolio import solve_relaxation
-
-dual_fista_result = solve_relaxation(
-    problem,
-    backend="fista",
-    pava="partial_sort",
-    options={
-        "prox_oracle": "dual_fista",
-        "restart_strategy": "gradient",
-        "tolerance": 1e-6,
-        "prox_tolerance": 1e-8,
-        "threads": 1,
-    },
-)
-
-dual_lbfgs_result = solve_relaxation(
-    problem,
-    backend="fista",
-    pava="partial_sort",
-    warm_start=dual_fista_result,
-    options={
-        "prox_oracle": "dual_lbfgs",
-        "restart_strategy": "gradient",
-        "tolerance": 1e-6,
-        "prox_tolerance": 1e-8,
-        "threads": 1,
-    },
-)
-```
-
-Every returned multiplier yields a recomputable Fenchel lower bound, even
-when the constrained proximal solve is approximate. This safety statement
-is mathematical in exact arithmetic. The current floating-point evaluation
-uses conservative margins but is not a directed-rounding proof.
-
-## JuMP and commercial backends
-
-```python
-from sksfolio.relaxation import solve_relaxation
-
-gurobi_result = solve_relaxation(problem, "gurobi")
-mosek_result = solve_relaxation(problem, "mosek")
-
-# The Julia/JuMP wrappers are still available explicitly.
-mosek_result = solve_relaxation(
-    problem,
-    "mosek.julia",
-    options={"julia_instantiate": True},
-)
-
-# Generic JuMP backend: Clarabel is the license-free default.
-clarabel_result = solve_relaxation(
-    problem,
-    "jump",
-    options={"optimizer": "clarabel", "julia_instantiate": True},
-)
-
-# Any installed MathOptInterface optimizer can be named explicitly.
-cosmo_result = solve_relaxation(
-    problem,
-    "jump.julia",
-    options={
-        "optimizer_package": "COSMO",
-        "optimizer_name": "Optimizer",
-        "optimizer_attributes": {"max_iter": 20_000},
-    },
-)
-```
-
-Commercial packages and Julia are imported lazily.  MOSEK code is included
-but its license-dependent solve is not required by the default test suite.
-Use `julia_instantiate=True` on the first Julia call to install the bundled
-JuMP environment; omit it on later calls.
-The generic wrapper enables this automatically on the first Clarabel or
-COSMO call in each Python process and reuses the loaded environment after
-that.
-The bundled conic choices are Gurobi, MosekTools, Clarabel, and COSMO.
-HiGHS is recognized but returns `status="unsupported"` because the exact
-perspective formulation contains rotated second-order cones; it is not
-silently replaced by a QP approximation. Custom optimizers may be selected
-as `Package` or `Package.Constructor` provided they implement the required
-MathOptInterface cones.
-For a custom optimizer, pass solver-specific stopping tolerances through
-`optimizer_attributes`; the portable `tolerance` option is configured only
-for the built-in optimizer profiles.
-Passing `warm_start=parent_result` to a JuMP backend forwards the parent
-portfolio as `initial_x` and reconstructs consistent perspective and risk
-epigraph starts. The point may violate newly added linear rows, which is
-intentional for branch-and-bound. Gurobi and COSMO consume conventional JuMP
-primal starts; other optimizers report that the supplied start was not used.
-
-When a commercial backend returns a portfolio, `sksfolio` also constructs a
-recomputable Fenchel certificate, using the factor exposure and a zero
-linear-row multiplier. This makes `result.safe_dual_bound` available with
-the same exact-arithmetic safety semantics as the first-order backends,
-although it can be loose. A commercial solver's own numerical bound is kept
-separately as `result.solver_objective_bound`; it is never relabeled as the
-recomputable certificate.
-
-For fair timing, `wrapper_seconds` and `end_to_end_seconds` include public
-diagnostics and certificate construction. `backend_call_seconds` isolates
-the solver call, and `api_postprocess_seconds` reports the difference.
-
-## Bertsimas--Cory-Wright benchmark instances
-
-The benchmark manifest contains all 30 OR-Library and 192 large-universe
-parameter combinations used in
-[the paper](https://arxiv.org/pdf/1811.00138). The synthetic generator
-matches the large-universe dimensions, factor ranks, `k` values,
-`gamma in {1 / sqrt(n), 100 / sqrt(n)}`, and the two return regimes.
-Published integer runtimes are retained only as context; they are not
-treated as expected runtimes or objective values for generated data.
-
-The BnB benchmark uses `regime="hybrid"`. Its matrix `C` is never just the
-budget row. With `S` sectors, `J` style factors, and `T` stresses, it has
-`2 + S + J + T` interval rows:
-
-- the budget equality `1' x = 1`;
-- one minimum-return lower bound;
-- `S` two-sided sector-allocation bands;
-- `J` two-sided style-exposure bands; and
-- `T` one-sided upper bounds on scenario losses.
-
-Thus the large command above with `--sectors 10 --styles 8 --stresses 10`
-uses 30 rows, while the default `10/4/4` stack uses 20 rows. The exact same
-`C`, lower bounds, and upper bounds are passed to FISTA, the custom BnB,
-Gurobi, MOSEK, and any enabled JuMP reference.
-
-For a FISTA-only restart study on both paper-shaped and many-row profiles,
-run:
+## 验证
 
 ```bash
-python -m sksfolio.benchmarks.run_fista_restarts \
-  --dimensions 499 958 3162 \
-  --profiles bcw many \
-  --repeats 3 \
-  --output-prefix output/benchmark/fista_restart_comparison
+python -m pytest -q
 ```
 
-This records raw runs, aggregates, checkpoint histories, time-to-bound
-targets, and a convergence figure for every FISTA restart rule. The exact
-integer comparison is `sksfolio-student-benchmark`, documented above. Use
-multiple seeds and report medians and timeout counts; do not infer a general
-speed ranking from one generated instance.
-
-## Tests
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-Commercial tests skip cleanly when a package, runtime, or license is absent.
+浮点结果附带可重新计算的 Fenchel 弱对偶证书。其数学安全性是在精确算术意义下陈述的；浮点实现会额外记录可行性残差和界一致性诊断。

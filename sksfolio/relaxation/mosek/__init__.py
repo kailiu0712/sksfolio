@@ -1,6 +1,5 @@
-"""MOSEK backends."""
+"""MOSEK relaxation backends."""
 
-from .julia import solve as solve_julia
-from .python import solve as solve_python
+from .python import solve
 
-__all__ = ["solve_julia", "solve_python"]
+__all__ = ["solve"]

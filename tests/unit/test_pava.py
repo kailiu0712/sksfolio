@@ -6,7 +6,7 @@ import unittest
 
 import numpy as np
 
-from sksfolio.relaxation.pdhg.pava import (
+from sksfolio.relaxation.pava import (
     check_pava_oracles,
     native_partial_sort_available,
     prox,
@@ -95,11 +95,11 @@ class PAVATests(unittest.TestCase):
     def test_implementations_are_split_across_public_modules(self) -> None:
         self.assertEqual(
             prox_full_sort.__module__,
-            "sksfolio.relaxation.pdhg.pava.full_sort",
+            "sksfolio.relaxation.pava.full_sort",
         )
         self.assertEqual(
             prox_partial_sort.__module__,
-            "sksfolio.relaxation.pdhg.pava.partial_sort",
+            "sksfolio.relaxation.pava.partial_sort",
         )
 
     def test_extreme_float64_scales_require_rescaling(self) -> None:
