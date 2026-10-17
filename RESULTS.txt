@@ -1,0 +1,52 @@
+JIT benchmark results
+
+Case n=500, k=10, 200 tight additional exposures, seed=0.
+Budget and mean-return rows are also present.
+Three repetitions per method, with fresh optimizer state.
+Numba scalar kernels are compiled in nopython mode; SciPy supplies compiled linear algebra.
+JIT compilation warmup 1.4181 s, excluded from solve times.
+Per-method small-case warmup and data generation are also excluded.
+Reported solve times include setup and final independent accuracy checks.
+
+Fastest passing method alm_polished at 0.046565 s.
+Fastest passing MOSEK at 0.117684 s.
+Speedup 2.527x including MOSEK setup, and 2.299x compared with MOSEK optimizer-only time.
+Winning method maximum relative gap 2.187e-10 and maximum raw feasibility residual 9.769e-13.
+
+Method                     Passed     Median attempt time (s)
+-------------------------------------------------------------
+alm_polished               3/3            0.046565
+alm_fast_tuned             3/3            0.049643
+active_set                 3/3            0.066362
+alm_fast                   3/3            0.088286
+mosek_fast                 3/3            0.117684
+mosek_reference            3/3            0.133988
+alm_original               3/3            0.432521
+pdhg                       3/3            3.237938
+adaptive_pdhg              3/3            3.896847
+alm_apg                    3/3            8.003818
+ipm                        0/3            0.115707
+nested_fast                0/3           15.000134
+newton_dense               0/3           15.000197
+newton_krylov_inexact      0/3           15.000208
+nested_fast_prox           0/3           15.000215
+nested_fast_outer          0/3           15.000267
+nested_fast_inexact        0/3           15.000277
+newton_krylov              0/3           15.000392
+
+Common targets are relative gap <= 1e-6 and original-unit feasibility <= 1e-7.
+Failed-run times are censored or unsuccessful attempts, not times to a valid solution.
+All seven nested Newton variants hit the 15-second limit in all repetitions.
+The experimental IPM failed the common accuracy check despite a short attempt time.
+The IPM prototype uses the supplied feasible anchor; the winning hybrid does not.
+
+Machine Apple M2 Ultra with 64 GiB memory, macOS arm64.
+The runner requests one CPU thread and runs methods sequentially in randomized order.
+This result applies to this synthetic CPU root-relaxation testcase.
+It is not a claim of universal dominance, GPU performance, or integer optimization speed.
+
+Reproduce
+
+    python -m sparsefolio --case CASE.json --all --with-mosek --repeats 3 --limit 15 --output comparison.json
+
+JIT-results.json contains all raw metrics, dependency versions, data fingerprints, and package-source hashes.

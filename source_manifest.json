@@ -1,0 +1,67 @@
+{
+  "core.py": {
+    "original_sha256": "8a1c3e1348f2e594ab8a23365b29c73e40e7e1425f6b84848b79b557d68223af",
+    "package_sha256": "5802468a3a9bbc0adf04ef6513364d5d1f9f5b0d84a21c1099b872f476649d98",
+    "changes": "Relative imports; guarded perspective-value evaluator replaces original evaluator."
+  },
+  "datasets.py": {
+    "original_sha256": "6e6d88f231fc9a5cea4967e09168320f0a06a3be0c0cd2044b26b97af6d46a94",
+    "package_sha256": "16bb54b14000bb4e46bb8d412ce1db406aa3d14e7b2163e457bd1de57d1a5b26",
+    "changes": "Relative imports only, if needed."
+  },
+  "first_order.py": {
+    "original_sha256": "e8076f6a2bd9131cc34a18c5d7b8aa03132b3ee1c35a960027c913e62c36b7d7",
+    "package_sha256": "70eab719d77b27350c5aeae9725d48b7fc0c83e2ceff4ae905e43eefa765606a",
+    "changes": "Relative imports only, if needed."
+  },
+  "newton.py": {
+    "original_sha256": "b803f7797993530c9c73a0f5ce27233c249abcb59ae544432adf6521d6b55b84",
+    "package_sha256": "1e22903206ca15850e490b353779905e30fbceb048f14ea3b0de3d71575c89fa",
+    "changes": "Relative imports only, if needed."
+  },
+  "alm_newton.py": {
+    "original_sha256": "629bb5bf27eee89846a02364f9393d7d63cfe091fad1e147d7509d4975f1a723",
+    "package_sha256": "19f82fbf81b774489e266ca5c9d98084d9303473f5e7c64b57cdc3e897ef3df2",
+    "changes": "Relative imports only, if needed."
+  },
+  "reference.py": {
+    "original_sha256": "443d519bf449a43f0976931fa9a75b9595e679c9777ab378cbf1cc3c739622ce",
+    "package_sha256": "606cab8aec23133a2a8ff651c5172663e44578cefa32cd270887290b66b37fed",
+    "changes": "Relative imports only, if needed."
+  },
+  "improvements/fast_core.py": {
+    "original_sha256": "02da9a089ad84d6095e924dea05854fef41b5a7061fc95e42f65a1815354a177",
+    "package_sha256": "ed6c727812b1db87418b175f972de08e8868cefb9322e1f27d70dde42f28e634",
+    "changes": "Relative imports only, if needed."
+  },
+  "improvements/alm_fast.py": {
+    "original_sha256": "beffc56c08399dd9844d63355e5e6a108589fa283699600bc857192509a5ede4",
+    "package_sha256": "5ea214b5a8e6808292f6d015d4e958a0c7523e428929e76fe2da9cb7b6efa78a",
+    "changes": "Relative imports only, if needed."
+  },
+  "improvements/alm_polished.py": {
+    "original_sha256": "a4424b8a1840d461db6432bc8a6c0b3560cb1e076676844ae4d51941b717d222",
+    "package_sha256": "fb38b705343f9028c1bf97e5246255cc9aa4eecc52f79431fb3ba336fec70425",
+    "changes": "Relative imports only, if needed."
+  },
+  "improvements/active_set.py": {
+    "original_sha256": "8cf4c3cf73986bdb7f7f29372872816276c524d81bb7729ae1e60a781bcc24d0",
+    "package_sha256": "15b75114b7810218d8287f766c1c9ad5f2dad5cb5d5e6b6bf0f14540b2a06c77",
+    "changes": "Relative imports only, if needed."
+  },
+  "improvements/nested_fast.py": {
+    "original_sha256": "4134d6f1c126ca3349a500461bfc83d32545829a15028827d3f10f94a500989e",
+    "package_sha256": "1a53882795e08e483039c8e0c949bdbf48a27bb7e9f8af9aa6cb95fdca8dfdcf",
+    "changes": "Relative imports only, if needed."
+  },
+  "improvements/inner_dual_fast.py": {
+    "original_sha256": "2370892bc8fcdb3260caf932671ca54cb3dd3ab8312f5d838142d2716ba3c1ad",
+    "package_sha256": "2370892bc8fcdb3260caf932671ca54cb3dd3ab8312f5d838142d2716ba3c1ad",
+    "changes": "Relative imports only, if needed."
+  },
+  "improvements/ipm.py": {
+    "original_sha256": "97fa4bfc8347481827f116fbcc7e308d7176918c4a37f40f5da12219ee159614",
+    "package_sha256": "37bfe0ee84a05117bf799b6bf6d6c8d13a823af78fe18f2a12f8c0a07505c27e",
+    "changes": "Relative imports only, if needed."
+  }
+}

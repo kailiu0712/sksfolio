@@ -1,0 +1,10 @@
+test_all_modules_import_without_mosek (test_package.PackageChecks.test_all_modules_import_without_mosek) ... ok
+test_guarded_value_bracket (test_package.PackageChecks.test_guarded_value_bracket) ... ok
+test_numba_and_prox_agreement (test_package.PackageChecks.test_numba_and_prox_agreement) ... ok
+test_recommended_solver_certificate (test_package.PackageChecks.test_recommended_solver_certificate) ... ok
+test_structured_inner_directions (test_package.PackageChecks.test_structured_inner_directions) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.312s
+
+OK

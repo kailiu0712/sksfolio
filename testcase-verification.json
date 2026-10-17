@@ -1,0 +1,12 @@
+{
+  "matches_original_saved_case": {
+    "B": true,
+    "c": true,
+    "gamma": true,
+    "u": true,
+    "raw_K": true,
+    "raw_lo": true,
+    "raw_hi": true
+  },
+  "source_hashes_match_benchmark": true
+}

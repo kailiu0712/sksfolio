@@ -1,0 +1,7 @@
+# Versions used for the delivered benchmark, with Python 3.12.
+numpy==2.3.5
+scipy==1.18.1
+numba==0.68.0
+threadpoolctl==3.7.0
+# Optional reference solver, requiring a license
+# Mosek==11.2.2
