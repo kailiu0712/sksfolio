@@ -1,0 +1,84 @@
+         43089 function calls in 1.960 seconds
+
+   Ordered by: cumulative time
+   List reduced from 136 to 40 due to restriction <40>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    1.960    1.960 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\__init__.py:11(solve)
+        1    0.000    0.000    1.960    1.960 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\api.py:15(solve)
+        1    0.000    0.000    1.959    1.959 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_polished.py:16(solve)
+        1    0.255    0.255    1.937    1.937 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:84(solve)
+      167    0.285    0.002    0.541    0.003 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:40(_direct_direction)
+      295    0.336    0.001    0.501    0.002 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:148(point)
+       77    0.146    0.002    0.218    0.003 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\core.py:170(evaluate)
+       71    0.005    0.000    0.215    0.003 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:136(certificate)
+      156    0.127    0.001    0.156    0.001 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\linalg\_basic.py:51(solve)
+     1266    0.061    0.000    0.150    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\linalg\_linalg.py:2566(norm)
+      725    0.007    0.000    0.087    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:2178(clip)
+      896    0.038    0.000    0.086    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:51(_wrapfunc)
+      167    0.071    0.000    0.071    0.000 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:196(hv)
+     1433    0.069    0.000    0.069    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+      167    0.058    0.000    0.064    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\shape_base.py:219(vstack)
+      298    0.051    0.000    0.055    0.000 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\fast_core.py:12(prox)
+      725    0.007    0.000    0.044    0.000 {method 'clip' of 'numpy.ndarray' objects}
+       71    0.039    0.001    0.042    0.001 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:167(candidate_y)
+      725    0.037    0.000    0.037    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\_methods.py:99(_clip)
+      449    0.006    0.000    0.034    0.000 {method 'sum' of 'numpy.ndarray' objects}
+     1067    0.030    0.000    0.030    0.000 {method 'dot' of 'numpy.ndarray' objects}
+      372    0.011    0.000    0.030    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:2255(sum)
+      449    0.002    0.000    0.028    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\_methods.py:50(_sum)
+      167    0.002    0.000    0.025    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:2513(all)
+      295    0.020    0.000    0.024    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\numeric.py:65(zeros_like)
+      167    0.012    0.000    0.024    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:89(_wrapreduction_any_all)
+     1706    0.023    0.000    0.023    0.000 {method 'ravel' of 'numpy.ndarray' objects}
+      618    0.008    0.000    0.023    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:69(_wrapreduction)
+       77    0.020    0.000    0.021    0.000 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\core.py:99(value_and_z)
+      199    0.002    0.000    0.020    0.000 {method 'max' of 'numpy.ndarray' objects}
+        1    0.002    0.002    0.019    0.019 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\active_set.py:30(polish)
+      199    0.001    0.000    0.018    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\_methods.py:42(_amax)
+      171    0.005    0.000    0.018    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\numeric.py:658(flatnonzero)
+       13    0.000    0.000    0.017    0.001 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\linalg\_decomp_cholesky.py:95(cho_factor)
+      156    0.010    0.000    0.017    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_twodim_base_impl.py:242(diag)
+       13    0.017    0.001    0.017    0.001 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\linalg\_decomp_cholesky.py:14(_cholesky)
+      169    0.011    0.000    0.017    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_twodim_base_impl.py:159(eye)
+      315    0.008    0.000    0.016    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\_lib\_util.py:275(_asarray_validated)
+      621    0.015    0.000    0.015    0.000 {built-in method numpy.zeros}
+      156    0.013    0.000    0.014    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\numeric.py:885(outer)
+
+
+         43089 function calls in 1.960 seconds
+
+   Ordered by: internal time
+   List reduced from 136 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      295    0.336    0.001    0.501    0.002 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:148(point)
+      167    0.285    0.002    0.541    0.003 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:40(_direct_direction)
+        1    0.255    0.255    1.937    1.937 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:84(solve)
+       77    0.146    0.002    0.218    0.003 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\core.py:170(evaluate)
+      156    0.127    0.001    0.156    0.001 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\linalg\_basic.py:51(solve)
+      167    0.071    0.000    0.071    0.000 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:196(hv)
+     1433    0.069    0.000    0.069    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+     1266    0.061    0.000    0.150    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\linalg\_linalg.py:2566(norm)
+      167    0.058    0.000    0.064    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\shape_base.py:219(vstack)
+      298    0.051    0.000    0.055    0.000 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\fast_core.py:12(prox)
+       71    0.039    0.001    0.042    0.001 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\improvements\alm_fast.py:167(candidate_y)
+      896    0.038    0.000    0.086    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:51(_wrapfunc)
+      725    0.037    0.000    0.037    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\_methods.py:99(_clip)
+     1067    0.030    0.000    0.030    0.000 {method 'dot' of 'numpy.ndarray' objects}
+     1706    0.023    0.000    0.023    0.000 {method 'ravel' of 'numpy.ndarray' objects}
+       77    0.020    0.000    0.021    0.000 D:\lkh\Cornell\RA\Soorosh Shafiee\ALM+Newton\sparsefolio\core.py:99(value_and_z)
+      295    0.020    0.000    0.024    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\numeric.py:65(zeros_like)
+       13    0.017    0.001    0.017    0.001 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\linalg\_decomp_cholesky.py:14(_cholesky)
+      621    0.015    0.000    0.015    0.000 {built-in method numpy.zeros}
+      167    0.013    0.000    0.013    0.000 {built-in method numpy.ascontiguousarray}
+      156    0.013    0.000    0.014    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\numeric.py:885(outer)
+      167    0.012    0.000    0.024    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:89(_wrapreduction_any_all)
+      372    0.011    0.000    0.030    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:2255(sum)
+      169    0.011    0.000    0.017    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_twodim_base_impl.py:159(eye)
+      167    0.010    0.000    0.011    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\shape_base.py:215(_vhstack_dispatcher)
+      156    0.010    0.000    0.017    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_twodim_base_impl.py:242(diag)
+      315    0.008    0.000    0.016    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\_lib\_util.py:275(_asarray_validated)
+        3    0.008    0.003    0.009    0.003 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\linalg\_decomp.py:283(eigh)
+     2348    0.008    0.000    0.008    0.000 {built-in method builtins.issubclass}
+      618    0.008    0.000    0.023    0.000 C:\Users\dengffang\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\_core\fromnumeric.py:69(_wrapreduction)

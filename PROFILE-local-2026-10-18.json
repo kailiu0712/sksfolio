@@ -1,0 +1,1677 @@
+{
+  "case": {
+    "n": 500,
+    "k": 10,
+    "exposures": 200,
+    "band": "tight",
+    "seed": 0
+  },
+  "requested_threads": 1,
+  "runs": [
+    {
+      "seconds": 1.5643859999836423,
+      "solved": true,
+      "metrics": {
+        "objective": 0.0620443070733894,
+        "lower_bound": 0.06204430705982264,
+        "dual_gap": 1.3566758827465719e-11,
+        "rel_gap": 2.1866242798744154e-10,
+        "feasibility": 9.767742170652127e-13,
+        "z_sum": 10.0
+      },
+      "diagnostics": {
+        "mode": "alm_polished",
+        "seconds": 1.5631604000227526,
+        "config": {
+          "warm_tol": 0.0001,
+          "warm_feas_tol": 1e-05,
+          "warm_max_iter": 300,
+          "warm_time_fraction": 0.8
+        },
+        "warm_seconds": 1.5490807999740355,
+        "warm_metrics": {
+          "objective": 0.06204364284158716,
+          "lower_bound": 0.06204429686982833,
+          "dual_gap": -6.540282411759968e-07,
+          "rel_gap": 1.05413111949383e-05,
+          "feasibility": 9.01283774479289e-06,
+          "z_sum": 10.0
+        },
+        "warm_diagnostics": {
+          "mode": "alm_fast_tuned",
+          "prox_calls": 295,
+          "krylov_iterations": 0,
+          "krylov_failures": 0,
+          "newton_steps": 167,
+          "gradient_fallbacks": 0,
+          "backtracks": 112,
+          "penalty_increases": 5,
+          "outer_iterations": 16,
+          "matrix_vector_products": 167,
+          "max_active_constraints": 196,
+          "linear_seconds": 0.6347206005011685,
+          "support_solves": 154,
+          "woodbury_solves": 13,
+          "linear_failures": 0,
+          "max_direct_system": 201,
+          "setup_seconds": 0.04187140002613887,
+          "rho_initial": 0.0649609216269859,
+          "smooth_lipschitz": 130.32848783435358,
+          "constraint_norm_squared": 20062.59833915485,
+          "config": {
+            "rho_factor": 10.0,
+            "penalty_growth": 3.0,
+            "inner_decay": 0.4,
+            "regularization_factor": 0.1,
+            "certificate_stride": 5,
+            "inner_limit": 80,
+            "line_search": "either",
+            "project_trials": true
+          },
+          "seconds": 1.5489812000305392,
+          "rho_final": 15.785503955357573,
+          "certificates": 71,
+          "selected_merit": 0.9012837744792889
+        },
+        "polish_diagnostics": {
+          "kkt_solves": 2,
+          "backtracks": 0,
+          "gradient_fallbacks": 0,
+          "max_support": 18,
+          "max_active": 18,
+          "prox_calls": 3,
+          "seconds": 0.011594099982175976,
+          "selected_merit": 0.00021866242798744155
+        },
+        "selected_phase": "polish"
+      },
+      "history": [
+        {
+          "iteration": 0,
+          "seconds": 0.00210829998832196,
+          "residual": 2.689380807754165e-10,
+          "objective": 0.06204364284314789,
+          "lower_bound": 0.062044296882844754,
+          "dual_gap": -6.540396968665596e-07,
+          "rel_gap": 1.0541495830012405e-05,
+          "feasibility": 9.01278914544612e-06,
+          "z_sum": 10.0
+        },
+        {
+          "iteration": 1,
+          "seconds": 0.006777999980840832,
+          "residual": 1.6801402564842816e-10,
+          "objective": 0.06204430712396467,
+          "lower_bound": 0.062043529268516626,
+          "dual_gap": 7.778554480461497e-07,
+          "rel_gap": 1.2537096215644615e-05,
+          "feasibility": 1.0386469462275727e-11,
+          "z_sum": 10.0
+        },
+        {
+          "iteration": 2,
+          "seconds": 0.011562699975911528,
+          "residual": 2.4978906914378534e-20,
+          "objective": 0.0620443070733894,
+          "lower_bound": 0.06204430705982264,
+          "dual_gap": 1.3566758827465719e-11,
+          "rel_gap": 2.1866242798744154e-10,
+          "feasibility": 9.767742170652127e-13,
+          "z_sum": 10.0
+        }
+      ]
+    },
+    {
+      "seconds": 1.0163530000136234,
+      "solved": true,
+      "metrics": {
+        "objective": 0.0620443070733894,
+        "lower_bound": 0.06204430705982264,
+        "dual_gap": 1.3566758827465719e-11,
+        "rel_gap": 2.1866242798744154e-10,
+        "feasibility": 9.767742170652127e-13,
+        "z_sum": 10.0
+      },
+      "diagnostics": {
+        "mode": "alm_polished",
+        "seconds": 1.0138817999977618,
+        "config": {
+          "warm_tol": 0.0001,
+          "warm_feas_tol": 1e-05,
+          "warm_max_iter": 300,
+          "warm_time_fraction": 0.8
+        },
+        "warm_seconds": 0.9972999999881722,
+        "warm_metrics": {
+          "objective": 0.06204364284158716,
+          "lower_bound": 0.06204429686982833,
+          "dual_gap": -6.540282411759968e-07,
+          "rel_gap": 1.05413111949383e-05,
+          "feasibility": 9.01283774479289e-06,
+          "z_sum": 10.0
+        },
+        "warm_diagnostics": {
+          "mode": "alm_fast_tuned",
+          "prox_calls": 295,
+          "krylov_iterations": 0,
+          "krylov_failures": 0,
+          "newton_steps": 167,
+          "gradient_fallbacks": 0,
+          "backtracks": 112,
+          "penalty_increases": 5,
+          "outer_iterations": 16,
+          "matrix_vector_products": 167,
+          "max_active_constraints": 196,
+          "linear_seconds": 0.3769356998964213,
+          "support_solves": 154,
+          "woodbury_solves": 13,
+          "linear_failures": 0,
+          "max_direct_system": 201,
+          "setup_seconds": 0.024517900019418448,
+          "rho_initial": 0.0649609216269859,
+          "smooth_lipschitz": 130.32848783435358,
+          "constraint_norm_squared": 20062.59833915485,
+          "config": {
+            "rho_factor": 10.0,
+            "penalty_growth": 3.0,
+            "inner_decay": 0.4,
+            "regularization_factor": 0.1,
+            "certificate_stride": 5,
+            "inner_limit": 80,
+            "line_search": "either",
+            "project_trials": true
+          },
+          "seconds": 0.9972319999942556,
+          "rho_final": 15.785503955357573,
+          "certificates": 71,
+          "selected_merit": 0.9012837744792889
+        },
+        "polish_diagnostics": {
+          "kkt_solves": 2,
+          "backtracks": 0,
+          "gradient_fallbacks": 0,
+          "max_support": 18,
+          "max_active": 18,
+          "prox_calls": 3,
+          "seconds": 0.013151599967386574,
+          "selected_merit": 0.00021866242798744155
+        },
+        "selected_phase": "polish"
+      },
+      "history": [
+        {
+          "iteration": 0,
+          "seconds": 0.0017917999648489058,
+          "residual": 2.689380807754165e-10,
+          "objective": 0.06204364284314789,
+          "lower_bound": 0.062044296882844754,
+          "dual_gap": -6.540396968665596e-07,
+          "rel_gap": 1.0541495830012405e-05,
+          "feasibility": 9.01278914544612e-06,
+          "z_sum": 10.0
+        },
+        {
+          "iteration": 1,
+          "seconds": 0.008090399962384254,
+          "residual": 1.6801402564842816e-10,
+          "objective": 0.06204430712396467,
+          "lower_bound": 0.062043529268516626,
+          "dual_gap": 7.778554480461497e-07,
+          "rel_gap": 1.2537096215644615e-05,
+          "feasibility": 1.0386469462275727e-11,
+          "z_sum": 10.0
+        },
+        {
+          "iteration": 2,
+          "seconds": 0.012688099988736212,
+          "residual": 2.4978906914378534e-20,
+          "objective": 0.0620443070733894,
+          "lower_bound": 0.06204430705982264,
+          "dual_gap": 1.3566758827465719e-11,
+          "rel_gap": 2.1866242798744154e-10,
+          "feasibility": 9.767742170652127e-13,
+          "z_sum": 10.0
+        }
+      ]
+    },
+    {
+      "seconds": 0.9386471000034362,
+      "solved": true,
+      "metrics": {
+        "objective": 0.0620443070733894,
+        "lower_bound": 0.06204430705982264,
+        "dual_gap": 1.3566758827465719e-11,
+        "rel_gap": 2.1866242798744154e-10,
+        "feasibility": 9.767742170652127e-13,
+        "z_sum": 10.0
+      },
+      "diagnostics": {
+        "mode": "alm_polished",
+        "seconds": 0.9349066000431776,
+        "config": {
+          "warm_tol": 0.0001,
+          "warm_feas_tol": 1e-05,
+          "warm_max_iter": 300,
+          "warm_time_fraction": 0.8
+        },
+        "warm_seconds": 0.9235515000182204,
+        "warm_metrics": {
+          "objective": 0.06204364284158716,
+          "lower_bound": 0.06204429686982833,
+          "dual_gap": -6.540282411759968e-07,
+          "rel_gap": 1.05413111949383e-05,
+          "feasibility": 9.01283774479289e-06,
+          "z_sum": 10.0
+        },
+        "warm_diagnostics": {
+          "mode": "alm_fast_tuned",
+          "prox_calls": 295,
+          "krylov_iterations": 0,
+          "krylov_failures": 0,
+          "newton_steps": 167,
+          "gradient_fallbacks": 0,
+          "backtracks": 112,
+          "penalty_increases": 5,
+          "outer_iterations": 16,
+          "matrix_vector_products": 167,
+          "max_active_constraints": 196,
+          "linear_seconds": 0.36768240010133013,
+          "support_solves": 154,
+          "woodbury_solves": 13,
+          "linear_failures": 0,
+          "max_direct_system": 201,
+          "setup_seconds": 0.014197200012858957,
+          "rho_initial": 0.0649609216269859,
+          "smooth_lipschitz": 130.32848783435358,
+          "constraint_norm_squared": 20062.59833915485,
+          "config": {
+            "rho_factor": 10.0,
+            "penalty_growth": 3.0,
+            "inner_decay": 0.4,
+            "regularization_factor": 0.1,
+            "certificate_stride": 5,
+            "inner_limit": 80,
+            "line_search": "either",
+            "project_trials": true
+          },
+          "seconds": 0.9234850999782793,
+          "rho_final": 15.785503955357573,
+          "certificates": 71,
+          "selected_merit": 0.9012837744792889
+        },
+        "polish_diagnostics": {
+          "kkt_solves": 2,
+          "backtracks": 0,
+          "gradient_fallbacks": 0,
+          "max_support": 18,
+          "max_active": 18,
+          "prox_calls": 3,
+          "seconds": 0.00869099999545142,
+          "selected_merit": 0.00021866242798744155
+        },
+        "selected_phase": "polish"
+      },
+      "history": [
+        {
+          "iteration": 0,
+          "seconds": 0.0017142999568022788,
+          "residual": 2.689380807754165e-10,
+          "objective": 0.06204364284314789,
+          "lower_bound": 0.062044296882844754,
+          "dual_gap": -6.540396968665596e-07,
+          "rel_gap": 1.0541495830012405e-05,
+          "feasibility": 9.01278914544612e-06,
+          "z_sum": 10.0
+        },
+        {
+          "iteration": 1,
+          "seconds": 0.005263899976853281,
+          "residual": 1.6801402564842816e-10,
+          "objective": 0.06204430712396467,
+          "lower_bound": 0.062043529268516626,
+          "dual_gap": 7.778554480461497e-07,
+          "rel_gap": 1.2537096215644615e-05,
+          "feasibility": 1.0386469462275727e-11,
+          "z_sum": 10.0
+        },
+        {
+          "iteration": 2,
+          "seconds": 0.008669399947393686,
+          "residual": 2.4978906914378534e-20,
+          "objective": 0.0620443070733894,
+          "lower_bound": 0.06204430705982264,
+          "dual_gap": 1.3566758827465719e-11,
+          "rel_gap": 2.1866242798744154e-10,
+          "feasibility": 9.767742170652127e-13,
+          "z_sum": 10.0
+        }
+      ]
+    }
+  ],
+  "median_seconds": 1.0163530000136234,
+  "profile_total_seconds": 1.9600501,
+  "functions": [
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\__init__.py",
+      "line": 11,
+      "name": "solve",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 5.05e-05,
+      "cumulative_seconds": 1.9599862000000001
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\api.py",
+      "line": 15,
+      "name": "solve",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 0.000132,
+      "cumulative_seconds": 1.9599337000000001
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_polished.py",
+      "line": 16,
+      "name": "solve",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 0.0002098,
+      "cumulative_seconds": 1.9587107000000001
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_fast.py",
+      "line": 84,
+      "name": "solve",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 0.2549378,
+      "cumulative_seconds": 1.9371943
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_fast.py",
+      "line": 40,
+      "name": "_direct_direction",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.2849624,
+      "cumulative_seconds": 0.5413751
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_fast.py",
+      "line": 148,
+      "name": "point",
+      "calls": 295,
+      "primitive_calls": 295,
+      "own_seconds": 0.33550830000000004,
+      "cumulative_seconds": 0.5011675
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\core.py",
+      "line": 170,
+      "name": "evaluate",
+      "calls": 77,
+      "primitive_calls": 77,
+      "own_seconds": 0.14577,
+      "cumulative_seconds": 0.21752780000000002
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_fast.py",
+      "line": 136,
+      "name": "certificate",
+      "calls": 71,
+      "primitive_calls": 71,
+      "own_seconds": 0.0051771000000000005,
+      "cumulative_seconds": 0.2148941
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_basic.py",
+      "line": 51,
+      "name": "solve",
+      "calls": 156,
+      "primitive_calls": 156,
+      "own_seconds": 0.12740100000000001,
+      "cumulative_seconds": 0.1563949
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\linalg\\_linalg.py",
+      "line": 2566,
+      "name": "norm",
+      "calls": 1266,
+      "primitive_calls": 1266,
+      "own_seconds": 0.0611652,
+      "cumulative_seconds": 0.1496565
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2178,
+      "name": "clip",
+      "calls": 725,
+      "primitive_calls": 725,
+      "own_seconds": 0.0067099,
+      "cumulative_seconds": 0.08730750000000001
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 51,
+      "name": "_wrapfunc",
+      "calls": 896,
+      "primitive_calls": 896,
+      "own_seconds": 0.0382267,
+      "cumulative_seconds": 0.08552080000000001
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_fast.py",
+      "line": 196,
+      "name": "hv",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.0712806,
+      "cumulative_seconds": 0.0712806
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "calls": 1433,
+      "primitive_calls": 1433,
+      "own_seconds": 0.069194,
+      "cumulative_seconds": 0.069194
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+      "line": 219,
+      "name": "vstack",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.0578564,
+      "cumulative_seconds": 0.06383760000000001
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\fast_core.py",
+      "line": 12,
+      "name": "prox",
+      "calls": 298,
+      "primitive_calls": 298,
+      "own_seconds": 0.0509121,
+      "cumulative_seconds": 0.0545864
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'clip' of 'numpy.ndarray' objects>",
+      "calls": 725,
+      "primitive_calls": 725,
+      "own_seconds": 0.0068329,
+      "cumulative_seconds": 0.0438476
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_fast.py",
+      "line": 167,
+      "name": "candidate_y",
+      "calls": 71,
+      "primitive_calls": 71,
+      "own_seconds": 0.0393775,
+      "cumulative_seconds": 0.0424753
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\_methods.py",
+      "line": 99,
+      "name": "_clip",
+      "calls": 725,
+      "primitive_calls": 725,
+      "own_seconds": 0.037014700000000005,
+      "cumulative_seconds": 0.037014700000000005
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'sum' of 'numpy.ndarray' objects>",
+      "calls": 449,
+      "primitive_calls": 449,
+      "own_seconds": 0.0061801,
+      "cumulative_seconds": 0.034091800000000005
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'dot' of 'numpy.ndarray' objects>",
+      "calls": 1067,
+      "primitive_calls": 1067,
+      "own_seconds": 0.0304459,
+      "cumulative_seconds": 0.0304459
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2255,
+      "name": "sum",
+      "calls": 372,
+      "primitive_calls": 372,
+      "own_seconds": 0.0114886,
+      "cumulative_seconds": 0.0295896
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\_methods.py",
+      "line": 50,
+      "name": "_sum",
+      "calls": 449,
+      "primitive_calls": 449,
+      "own_seconds": 0.0015678,
+      "cumulative_seconds": 0.0279117
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2513,
+      "name": "all",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.0015573000000000002,
+      "cumulative_seconds": 0.025291200000000003
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numeric.py",
+      "line": 65,
+      "name": "zeros_like",
+      "calls": 295,
+      "primitive_calls": 295,
+      "own_seconds": 0.0198831,
+      "cumulative_seconds": 0.0239288
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 89,
+      "name": "_wrapreduction_any_all",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.0124764,
+      "cumulative_seconds": 0.023733900000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'ravel' of 'numpy.ndarray' objects>",
+      "calls": 1706,
+      "primitive_calls": 1706,
+      "own_seconds": 0.023476900000000002,
+      "cumulative_seconds": 0.023476900000000002
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 69,
+      "name": "_wrapreduction",
+      "calls": 618,
+      "primitive_calls": 618,
+      "own_seconds": 0.007525700000000001,
+      "cumulative_seconds": 0.0229436
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\core.py",
+      "line": 99,
+      "name": "value_and_z",
+      "calls": 77,
+      "primitive_calls": 77,
+      "own_seconds": 0.0202627,
+      "cumulative_seconds": 0.020649800000000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'max' of 'numpy.ndarray' objects>",
+      "calls": 199,
+      "primitive_calls": 199,
+      "own_seconds": 0.001946,
+      "cumulative_seconds": 0.0202785
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\active_set.py",
+      "line": 30,
+      "name": "polish",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 0.0022329000000000003,
+      "cumulative_seconds": 0.018831300000000002
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\_methods.py",
+      "line": 42,
+      "name": "_amax",
+      "calls": 199,
+      "primitive_calls": 199,
+      "own_seconds": 0.0005835,
+      "cumulative_seconds": 0.0183325
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numeric.py",
+      "line": 658,
+      "name": "flatnonzero",
+      "calls": 171,
+      "primitive_calls": 171,
+      "own_seconds": 0.0049385,
+      "cumulative_seconds": 0.0176034
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_decomp_cholesky.py",
+      "line": 95,
+      "name": "cho_factor",
+      "calls": 13,
+      "primitive_calls": 13,
+      "own_seconds": 0.0001145,
+      "cumulative_seconds": 0.0173093
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_twodim_base_impl.py",
+      "line": 242,
+      "name": "diag",
+      "calls": 156,
+      "primitive_calls": 156,
+      "own_seconds": 0.0098369,
+      "cumulative_seconds": 0.0171983
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_decomp_cholesky.py",
+      "line": 14,
+      "name": "_cholesky",
+      "calls": 13,
+      "primitive_calls": 13,
+      "own_seconds": 0.016640000000000002,
+      "cumulative_seconds": 0.0171948
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_twodim_base_impl.py",
+      "line": 159,
+      "name": "eye",
+      "calls": 169,
+      "primitive_calls": 169,
+      "own_seconds": 0.0111526,
+      "cumulative_seconds": 0.0165323
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\_lib\\_util.py",
+      "line": 275,
+      "name": "_asarray_validated",
+      "calls": 315,
+      "primitive_calls": 315,
+      "own_seconds": 0.008394500000000001,
+      "cumulative_seconds": 0.0161821
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method numpy.zeros>",
+      "calls": 621,
+      "primitive_calls": 621,
+      "own_seconds": 0.015347800000000002,
+      "cumulative_seconds": 0.015347800000000002
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numeric.py",
+      "line": 885,
+      "name": "outer",
+      "calls": 156,
+      "primitive_calls": 156,
+      "own_seconds": 0.013022200000000001,
+      "cumulative_seconds": 0.013999900000000001
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_fast.py",
+      "line": 25,
+      "name": "_norm_squared",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 0.0050496000000000004,
+      "cumulative_seconds": 0.0136383
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method numpy.ascontiguousarray>",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.0134202,
+      "cumulative_seconds": 0.0134202
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+      "line": 215,
+      "name": "_vhstack_dispatcher",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.0099343,
+      "cumulative_seconds": 0.0114917
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\linalg\\_linalg.py",
+      "line": 128,
+      "name": "isComplexType",
+      "calls": 1067,
+      "primitive_calls": 1067,
+      "own_seconds": 0.0063374,
+      "cumulative_seconds": 0.0104677
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2781,
+      "name": "max",
+      "calls": 246,
+      "primitive_calls": 246,
+      "own_seconds": 0.0019591,
+      "cumulative_seconds": 0.010384000000000001
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+      "line": 81,
+      "name": "atleast_2d",
+      "calls": 336,
+      "primitive_calls": 336,
+      "own_seconds": 0.003909,
+      "cumulative_seconds": 0.0094024
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 1959,
+      "name": "nonzero",
+      "calls": 171,
+      "primitive_calls": 171,
+      "own_seconds": 0.0043642,
+      "cumulative_seconds": 0.009287400000000001
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_decomp.py",
+      "line": 283,
+      "name": "eigh",
+      "calls": 3,
+      "primitive_calls": 3,
+      "own_seconds": 0.0083517,
+      "cumulative_seconds": 0.009169
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method builtins.issubclass>",
+      "calls": 2348,
+      "primitive_calls": 2348,
+      "own_seconds": 0.0081408,
+      "cumulative_seconds": 0.0081408
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method builtins.max>",
+      "calls": 1522,
+      "primitive_calls": 1522,
+      "own_seconds": 0.007249800000000001,
+      "cumulative_seconds": 0.007249800000000001
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\sparse\\_base.py",
+      "line": 1335,
+      "name": "issparse",
+      "calls": 315,
+      "primitive_calls": 315,
+      "own_seconds": 0.0045535,
+      "cumulative_seconds": 0.006477800000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method builtins.isinstance>",
+      "calls": 1351,
+      "primitive_calls": 1351,
+      "own_seconds": 0.006344000000000001,
+      "cumulative_seconds": 0.006344000000000001
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_ufunclike_impl.py",
+      "line": 71,
+      "name": "isposinf",
+      "calls": 158,
+      "primitive_calls": 158,
+      "own_seconds": 0.0057854000000000004,
+      "cumulative_seconds": 0.0057854000000000004
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\blas.py",
+      "line": 384,
+      "name": "getter",
+      "calls": 497,
+      "primitive_calls": 497,
+      "own_seconds": 0.0036661000000000003,
+      "cumulative_seconds": 0.0050420000000000005
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'append' of 'list' objects>",
+      "calls": 737,
+      "primitive_calls": 737,
+      "own_seconds": 0.0047979,
+      "cumulative_seconds": 0.0047979
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\active_set.py",
+      "line": 48,
+      "name": "point",
+      "calls": 3,
+      "primitive_calls": 3,
+      "own_seconds": 0.0037572,
+      "cumulative_seconds": 0.0042702
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numba\\core\\serialize.py",
+      "line": 30,
+      "name": "_numba_unpickle",
+      "calls": 1269,
+      "primitive_calls": 1269,
+      "own_seconds": 0.004061400000000001,
+      "cumulative_seconds": 0.004061400000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'copy' of 'numpy.ndarray' objects>",
+      "calls": 415,
+      "primitive_calls": 415,
+      "own_seconds": 0.0036837000000000003,
+      "cumulative_seconds": 0.0036837000000000003
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 711,
+      "name": "partition",
+      "calls": 77,
+      "primitive_calls": 77,
+      "own_seconds": 0.0006211000000000001,
+      "cumulative_seconds": 0.0036614000000000004
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 1846,
+      "name": "ravel",
+      "calls": 171,
+      "primitive_calls": 171,
+      "own_seconds": 0.0014794,
+      "cumulative_seconds": 0.0029726
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_ufunclike_impl.py",
+      "line": 140,
+      "name": "isneginf",
+      "calls": 158,
+      "primitive_calls": 158,
+      "own_seconds": 0.0028966,
+      "cumulative_seconds": 0.0028966
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method numpy.asarray>",
+      "calls": 2010,
+      "primitive_calls": 2010,
+      "own_seconds": 0.0027016,
+      "cumulative_seconds": 0.0027016
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method builtins.len>",
+      "calls": 1731,
+      "primitive_calls": 1731,
+      "own_seconds": 0.0025536,
+      "cumulative_seconds": 0.0025536
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_decomp_cholesky.py",
+      "line": 160,
+      "name": "cho_solve",
+      "calls": 13,
+      "primitive_calls": 13,
+      "own_seconds": 0.0020145000000000002,
+      "cumulative_seconds": 0.0022977
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'partition' of 'numpy.ndarray' objects>",
+      "calls": 77,
+      "primitive_calls": 77,
+      "own_seconds": 0.0022037000000000003,
+      "cumulative_seconds": 0.0022037000000000003
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\alm_fast.py",
+      "line": 132,
+      "name": "check_time",
+      "calls": 478,
+      "primitive_calls": 478,
+      "own_seconds": 0.0014793,
+      "cumulative_seconds": 0.0021650000000000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method builtins.min>",
+      "calls": 204,
+      "primitive_calls": 204,
+      "own_seconds": 0.0021257000000000003,
+      "cumulative_seconds": 0.0021257000000000003
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_basic.py",
+      "line": 35,
+      "name": "_solve_check",
+      "calls": 468,
+      "primitive_calls": 468,
+      "own_seconds": 0.0020729,
+      "cumulative_seconds": 0.0020729
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'nonzero' of 'numpy.ndarray' objects>",
+      "calls": 171,
+      "primitive_calls": 171,
+      "own_seconds": 0.0017986,
+      "cumulative_seconds": 0.0017986
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2174,
+      "name": "_clip_dispatcher",
+      "calls": 725,
+      "primitive_calls": 725,
+      "own_seconds": 0.0016706000000000002,
+      "cumulative_seconds": 0.0016706000000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method builtins.getattr>",
+      "calls": 904,
+      "primitive_calls": 904,
+      "own_seconds": 0.0016684,
+      "cumulative_seconds": 0.0016684
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'items' of 'dict' objects>",
+      "calls": 785,
+      "primitive_calls": 785,
+      "own_seconds": 0.0015743,
+      "cumulative_seconds": 0.0015743
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+      "line": 207,
+      "name": "_arrays_for_stack_dispatcher",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.0007416,
+      "cumulative_seconds": 0.0015574
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method time.perf_counter>",
+      "calls": 897,
+      "primitive_calls": 897,
+      "own_seconds": 0.0014307,
+      "cumulative_seconds": 0.0014307
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+      "line": 23,
+      "name": "atleast_1d",
+      "calls": 156,
+      "primitive_calls": 156,
+      "own_seconds": 0.0009206,
+      "cumulative_seconds": 0.0013915000000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'get' of 'dict' objects>",
+      "calls": 500,
+      "primitive_calls": 500,
+      "own_seconds": 0.0013831000000000002,
+      "cumulative_seconds": 0.0013831000000000002
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\linalg\\_linalg.py",
+      "line": 2562,
+      "name": "_norm_dispatcher",
+      "calls": 1266,
+      "primitive_calls": 1266,
+      "own_seconds": 0.0013781000000000002,
+      "cumulative_seconds": 0.0013781000000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method numpy.asanyarray>",
+      "calls": 1063,
+      "primitive_calls": 1063,
+      "own_seconds": 0.0012380000000000002,
+      "cumulative_seconds": 0.0012380000000000002
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\improvements\\active_set.py",
+      "line": 23,
+      "name": "_project_domain",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 0.0008152000000000001,
+      "cumulative_seconds": 0.0009593000000000001
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\ma\\core.py",
+      "line": 6607,
+      "name": "isMaskedArray",
+      "calls": 315,
+      "primitive_calls": 315,
+      "own_seconds": 0.0006431000000000001,
+      "cumulative_seconds": 0.0009172000000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method builtins.abs>",
+      "calls": 666,
+      "primitive_calls": 666,
+      "own_seconds": 0.0008471,
+      "cumulative_seconds": 0.0008471
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method builtins.hasattr>",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.0008158000000000001,
+      "cumulative_seconds": 0.0008158000000000001
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_decomp.py",
+      "line": 913,
+      "name": "eigvalsh",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 9.5e-06,
+      "cumulative_seconds": 0.0006022
+    },
+    {
+      "file": "D:\\lkh\\Cornell\\RA\\Soorosh Shafiee\\ALM+Newton\\sparsefolio\\core.py",
+      "line": 28,
+      "name": "n",
+      "calls": 156,
+      "primitive_calls": 156,
+      "own_seconds": 0.0003242,
+      "cumulative_seconds": 0.0005387
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method _operator.index>",
+      "calls": 338,
+      "primitive_calls": 338,
+      "own_seconds": 0.00042140000000000005,
+      "cumulative_seconds": 0.00042140000000000005
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2250,
+      "name": "_sum_dispatcher",
+      "calls": 372,
+      "primitive_calls": 372,
+      "own_seconds": 0.0003947,
+      "cumulative_seconds": 0.0003947
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_decomp.py",
+      "line": 501,
+      "name": "<genexpr>",
+      "calls": 6,
+      "primitive_calls": 6,
+      "own_seconds": 0.0003748,
+      "cumulative_seconds": 0.0003748
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\_misc.py",
+      "line": 181,
+      "name": "_datacopied",
+      "calls": 341,
+      "primitive_calls": 341,
+      "own_seconds": 0.0003178,
+      "cumulative_seconds": 0.0003178
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numeric.py",
+      "line": 59,
+      "name": "_zeros_like_dispatcher",
+      "calls": 295,
+      "primitive_calls": 295,
+      "own_seconds": 0.0003063,
+      "cumulative_seconds": 0.0003063
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\multiarray.py",
+      "line": 1089,
+      "name": "copyto",
+      "calls": 296,
+      "primitive_calls": 296,
+      "own_seconds": 0.0002788,
+      "cumulative_seconds": 0.0002788
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\multiarray.py",
+      "line": 83,
+      "name": "empty_like",
+      "calls": 295,
+      "primitive_calls": 295,
+      "own_seconds": 0.00027160000000000004,
+      "cumulative_seconds": 0.00027160000000000004
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 1842,
+      "name": "_ravel_dispatcher",
+      "calls": 171,
+      "primitive_calls": 171,
+      "own_seconds": 0.00027,
+      "cumulative_seconds": 0.00027
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+      "line": 77,
+      "name": "_atleast_2d_dispatcher",
+      "calls": 336,
+      "primitive_calls": 336,
+      "own_seconds": 0.0002568,
+      "cumulative_seconds": 0.0002568
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_ufunclike_impl.py",
+      "line": 14,
+      "name": "_dispatcher",
+      "calls": 316,
+      "primitive_calls": 316,
+      "own_seconds": 0.0002553,
+      "cumulative_seconds": 0.0002553
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2776,
+      "name": "_max_dispatcher",
+      "calls": 246,
+      "primitive_calls": 246,
+      "own_seconds": 0.00024480000000000004,
+      "cumulative_seconds": 0.00024480000000000004
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2508,
+      "name": "_all_dispatcher",
+      "calls": 167,
+      "primitive_calls": 167,
+      "own_seconds": 0.00020720000000000002,
+      "cumulative_seconds": 0.00020720000000000002
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numeric.py",
+      "line": 654,
+      "name": "_flatnonzero_dispatcher",
+      "calls": 171,
+      "primitive_calls": 171,
+      "own_seconds": 0.00020400000000000003,
+      "cumulative_seconds": 0.00020400000000000003
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\lapack.py",
+      "line": 982,
+      "name": "_compute_lwork",
+      "calls": 3,
+      "primitive_calls": 3,
+      "own_seconds": 0.00010240000000000001,
+      "cumulative_seconds": 0.00020370000000000002
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_index_tricks_impl.py",
+      "line": 34,
+      "name": "ix_",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 7.680000000000001e-05,
+      "cumulative_seconds": 0.0001821
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numeric.py",
+      "line": 881,
+      "name": "_outer_dispatcher",
+      "calls": 156,
+      "primitive_calls": 156,
+      "own_seconds": 0.0001784,
+      "cumulative_seconds": 0.0001784
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\multiarray.py",
+      "line": 161,
+      "name": "concatenate",
+      "calls": 169,
+      "primitive_calls": 169,
+      "own_seconds": 0.0001527,
+      "cumulative_seconds": 0.0001527
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_twodim_base_impl.py",
+      "line": 238,
+      "name": "_diag_dispatcher",
+      "calls": 156,
+      "primitive_calls": 156,
+      "own_seconds": 0.0001518,
+      "cumulative_seconds": 0.0001518
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 1955,
+      "name": "_nonzero_dispatcher",
+      "calls": 171,
+      "primitive_calls": 171,
+      "own_seconds": 0.0001349,
+      "cumulative_seconds": 0.0001349
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+      "line": 19,
+      "name": "_atleast_1d_dispatcher",
+      "calls": 156,
+      "primitive_calls": 156,
+      "own_seconds": 0.0001161,
+      "cumulative_seconds": 0.0001161
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 707,
+      "name": "_partition_dispatcher",
+      "calls": 77,
+      "primitive_calls": 77,
+      "own_seconds": 8.290000000000001e-05,
+      "cumulative_seconds": 8.290000000000001e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\importlib\\__init__.py",
+      "line": 73,
+      "name": "import_module",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 1.32e-05,
+      "cumulative_seconds": 8.27e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\lapack.py",
+      "line": 1013,
+      "name": "<genexpr>",
+      "calls": 9,
+      "primitive_calls": 9,
+      "own_seconds": 2.97e-05,
+      "cumulative_seconds": 8.15e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\warnings.py",
+      "line": 168,
+      "name": "simplefilter",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 2.82e-05,
+      "cumulative_seconds": 8.09e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'copy' of 'dict' objects>",
+      "calls": 33,
+      "primitive_calls": 33,
+      "own_seconds": 7.900000000000001e-05,
+      "cumulative_seconds": 7.900000000000001e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numerictypes.py",
+      "line": 470,
+      "name": "issubdtype",
+      "calls": 4,
+      "primitive_calls": 4,
+      "own_seconds": 3.2500000000000004e-05,
+      "cumulative_seconds": 7.560000000000001e-05
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 1375,
+      "name": "_gcd_import",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 1.93e-05,
+      "cumulative_seconds": 6.8e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'disable' of '_lsprof.Profiler' objects>",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 6.390000000000001e-05,
+      "cumulative_seconds": 6.390000000000001e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numeric.py",
+      "line": 300,
+      "name": "full",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 3.6e-05,
+      "cumulative_seconds": 5.4600000000000006e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy\\linalg\\lapack.py",
+      "line": 1017,
+      "name": "_check_work_float",
+      "calls": 6,
+      "primitive_calls": 6,
+      "own_seconds": 5.1800000000000005e-05,
+      "cumulative_seconds": 5.1800000000000005e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\warnings.py",
+      "line": 184,
+      "name": "_add_filter",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 2.78e-05,
+      "cumulative_seconds": 4.99e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method numpy.arange>",
+      "calls": 6,
+      "primitive_calls": 6,
+      "own_seconds": 4.1200000000000005e-05,
+      "cumulative_seconds": 4.1200000000000005e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\_core\\numerictypes.py",
+      "line": 288,
+      "name": "issubclass_",
+      "calls": 8,
+      "primitive_calls": 8,
+      "own_seconds": 2.3e-05,
+      "cumulative_seconds": 3.96e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'update' of 'dict' objects>",
+      "calls": 8,
+      "primitive_calls": 8,
+      "own_seconds": 3.46e-05,
+      "cumulative_seconds": 3.46e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\warnings.py",
+      "line": 484,
+      "name": "__enter__",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 2.2100000000000002e-05,
+      "cumulative_seconds": 2.61e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method numpy.empty>",
+      "calls": 3,
+      "primitive_calls": 3,
+      "own_seconds": 2.54e-05,
+      "cumulative_seconds": 2.54e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_type_check_impl.py",
+      "line": 265,
+      "name": "iscomplexobj",
+      "calls": 3,
+      "primitive_calls": 3,
+      "own_seconds": 2.01e-05,
+      "cumulative_seconds": 2.46e-05
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 1349,
+      "name": "_find_and_load",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 1.3800000000000002e-05,
+      "cumulative_seconds": 1.97e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'reshape' of 'numpy.ndarray' objects>",
+      "calls": 4,
+      "primitive_calls": 4,
+      "own_seconds": 1.8900000000000002e-05,
+      "cumulative_seconds": 1.8900000000000002e-05
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\warnings.py",
+      "line": 505,
+      "name": "__exit__",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 1.43e-05,
+      "cumulative_seconds": 1.72e-05
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 645,
+      "name": "parent",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 1.46e-05,
+      "cumulative_seconds": 1.7100000000000002e-05
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 1231,
+      "name": "_resolve_name",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 1.2100000000000001e-05,
+      "cumulative_seconds": 1.7e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'remove' of 'list' objects>",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 1.65e-05,
+      "cumulative_seconds": 1.65e-05
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 1285,
+      "name": "_sanity_check",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 9.800000000000001e-06,
+      "cumulative_seconds": 1.2e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<built-in method _warnings._filters_mutated>",
+      "calls": 6,
+      "primitive_calls": 6,
+      "own_seconds": 8.5e-06,
+      "cumulative_seconds": 8.5e-06
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'startswith' of 'str' objects>",
+      "calls": 4,
+      "primitive_calls": 4,
+      "own_seconds": 7.9e-06,
+      "cumulative_seconds": 7.9e-06
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\warnings.py",
+      "line": 458,
+      "name": "__init__",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 6.900000000000001e-06,
+      "cumulative_seconds": 6.900000000000001e-06
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'insert' of 'list' objects>",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 4.000000000000001e-06,
+      "cumulative_seconds": 4.000000000000001e-06
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'rsplit' of 'str' objects>",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 3.5000000000000004e-06,
+      "cumulative_seconds": 3.5000000000000004e-06
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_type_check_impl.py",
+      "line": 168,
+      "name": "_is_type_dispatcher",
+      "calls": 3,
+      "primitive_calls": 3,
+      "own_seconds": 2.6e-06,
+      "cumulative_seconds": 2.6e-06
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "name": "<method 'rpartition' of 'str' objects>",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 2.5e-06,
+      "cumulative_seconds": 2.5e-06
+    },
+    {
+      "file": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy\\lib\\_index_tricks_impl.py",
+      "line": 30,
+      "name": "_ix__dispatcher",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 1.5e-06,
+      "cumulative_seconds": 1.5e-06
+    }
+  ],
+  "profiled_diagnostics": {
+    "mode": "alm_polished",
+    "seconds": 1.9586864999728277,
+    "config": {
+      "warm_tol": 0.0001,
+      "warm_feas_tol": 1e-05,
+      "warm_max_iter": 300,
+      "warm_time_fraction": 0.8
+    },
+    "warm_seconds": 1.9372852999949828,
+    "warm_metrics": {
+      "objective": 0.06204364284158716,
+      "lower_bound": 0.06204429686982833,
+      "dual_gap": -6.540282411759968e-07,
+      "rel_gap": 1.05413111949383e-05,
+      "feasibility": 9.01283774479289e-06,
+      "z_sum": 10.0
+    },
+    "warm_diagnostics": {
+      "mode": "alm_fast_tuned",
+      "prox_calls": 295,
+      "krylov_iterations": 0,
+      "krylov_failures": 0,
+      "newton_steps": 167,
+      "gradient_fallbacks": 0,
+      "backtracks": 112,
+      "penalty_increases": 5,
+      "outer_iterations": 16,
+      "matrix_vector_products": 167,
+      "max_active_constraints": 196,
+      "linear_seconds": 0.6804826998850331,
+      "support_solves": 154,
+      "woodbury_solves": 13,
+      "linear_failures": 0,
+      "max_direct_system": 201,
+      "setup_seconds": 0.013806400005705655,
+      "rho_initial": 0.0649609216269859,
+      "smooth_lipschitz": 130.32848783435358,
+      "constraint_norm_squared": 20062.59833915485,
+      "config": {
+        "rho_factor": 10.0,
+        "penalty_growth": 3.0,
+        "inner_decay": 0.4,
+        "regularization_factor": 0.1,
+        "certificate_stride": 5,
+        "inner_limit": 80,
+        "line_search": "either",
+        "project_trials": true
+      },
+      "seconds": 1.9371531000360847,
+      "rho_final": 15.785503955357573,
+      "certificates": 71,
+      "selected_merit": 0.9012837744792889
+    },
+    "polish_diagnostics": {
+      "kkt_solves": 2,
+      "backtracks": 0,
+      "gradient_fallbacks": 0,
+      "max_support": 18,
+      "max_active": 18,
+      "prox_calls": 3,
+      "seconds": 0.018814400013070554,
+      "selected_merit": 0.00021866242798744155
+    },
+    "selected_phase": "polish"
+  },
+  "threadpools": [
+    {
+      "user_api": "blas",
+      "internal_api": "openblas",
+      "num_threads": 1,
+      "prefix": "libscipy_openblas",
+      "filepath": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-caad452230ae4ddb57899b8b3a33c55c.dll",
+      "version": "0.3.27",
+      "threading_layer": "pthreads",
+      "architecture": "Haswell"
+    },
+    {
+      "user_api": "blas",
+      "internal_api": "openblas",
+      "num_threads": 1,
+      "prefix": "libscipy_openblas",
+      "filepath": "C:\\Users\\dengffang\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\scipy.libs\\libscipy_openblas-5b1ec8b915dfb81d11cebc0788069d2d.dll",
+      "version": "0.3.27.dev",
+      "threading_layer": "pthreads",
+      "architecture": "Haswell"
+    }
+  ],
+  "thread_environment": {
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "constraint_row_norm_range": [
+    22.360679774997894,
+    22.3606797749979
+  ],
+  "note": "Supplementary diagnostics only; excluded from the official 54-attempt benchmark."
+}

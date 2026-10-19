@@ -1,0 +1,113 @@
+JIT benchmark results - local machine, 2026-10-18 (America/New_York)
+
+Case n=500, k=10, 200 tight additional exposures, seed=0.
+Budget and mean-return rows are also present (202 total rows).
+Three repetitions per method, with fresh optimizer state; 18 methods, 54 attempts.
+Numba scalar kernels are compiled in nopython mode; SciPy supplies compiled linear algebra.
+JIT compilation/cache-loading warmup 5.4594 s, excluded from solve times.
+Per-method small-case warmup and data generation are also excluded.
+Reported solve times include setup and final independent accuracy checks.
+
+Fastest passing custom method alm_polished at 0.710782 s.
+Fastest passing MOSEK setting mosek_fast at 1.356840 s.
+Speedup 1.909x including MOSEK setup, and 1.659x compared with MOSEK optimizer-only time.
+Winning method maximum relative gap 2.187e-10 and maximum raw feasibility residual 9.768e-13.
+
+Method                     Passed     Median attempt time (s)    Min (s)      Max (s)
+--------------------------------------------------------------------------------------
+alm_polished               3/3                0.710782     0.658364     0.989810
+alm_fast_tuned             3/3                0.855943     0.803465     1.063645
+active_set                 3/3                1.021202     0.945170     1.134523
+mosek_fast                 3/3                1.356840     1.138671     1.508163
+mosek_reference            3/3                1.415395     1.276561     2.152098
+alm_fast                   3/3                1.656421     1.162659     1.711897
+alm_original               3/3                7.150919     5.862948     7.461783
+ipm                        0/3                2.005141     1.687736     2.709365
+nested_fast_prox           0/3               15.001143    15.001135    15.001459
+newton_krylov              0/3               15.001606    15.001370    15.004561
+nested_fast                0/3               15.001678    15.001616    15.002759
+nested_fast_outer          0/3               15.001847    15.001699    15.003969
+adaptive_pdhg              0/3               15.001959    15.001913    15.008014
+nested_fast_inexact        0/3               15.002692    15.001532    15.008454
+pdhg                       0/3               15.003030    15.002874    15.003048
+newton_krylov_inexact      0/3               15.003878    15.001631    15.011701
+newton_dense               0/3               15.005990    15.004136    15.033545
+alm_apg                    0/3               15.010815    15.004572    15.015758
+
+Common targets are relative gap <= 1e-6 and original-unit feasibility <= 1e-7.
+Failed-run times are censored or unsuccessful attempts, not times to a valid solution.
+ipm: 0/3 passed; statuses: line_search_failure.
+nested_fast_prox: 0/3 passed; statuses: time_limit.
+newton_krylov: 0/3 passed; statuses: time_limit.
+nested_fast: 0/3 passed; statuses: time_limit.
+nested_fast_outer: 0/3 passed; statuses: time_limit.
+adaptive_pdhg: 0/3 passed; statuses: time_limit.
+nested_fast_inexact: 0/3 passed; statuses: time_limit.
+pdhg: 0/3 passed; statuses: time_limit.
+newton_krylov_inexact: 0/3 passed; statuses: time_limit.
+newton_dense: 0/3 passed; statuses: time_limit.
+alm_apg: 0/3 passed; statuses: time_limit.
+
+Machine Intel Core i7-10510U CPU @ 1.80GHz, 4 cores / 8 logical processors.
+Installed RAM: 16,918,597,632 bytes (15.757 GiB). Windows 11 x86-64.
+Python 3.12.6; NumPy 2.0.2; SciPy 1.14.1; Numba 0.60.0; threadpoolctl 3.5.0; MOSEK 11.2.2.
+The runner requests one CPU thread and runs methods sequentially in randomized order.
+The machine was not isolated from unrelated OS/user activity; timing spread is shown above.
+This result applies to this synthetic CPU root-relaxation testcase.
+
+Comparison with the original RESULTS.txt / JIT-results.json
+
+Original machine: Apple M2 Ultra, 64 GiB, macOS arm64.
+Original libraries: Python 3.12.14, NumPy 2.3.5, SciPy 1.18.1, Numba 0.68.0.
+The same generator, case, tolerances, randomized schedule, repetitions, and time limits were used.
+Package source hashes: all match after normalizing path separators.
+Data byte hashes matching: 2/10.
+  B: identical bytes
+  c: different byte hash; cross-platform numerical variation is a possible cause
+  gamma: different byte hash; cross-platform numerical variation is a possible cause
+  u: identical bytes
+  K: different byte hash; cross-platform numerical variation is a possible cause
+  lo: different byte hash; cross-platform numerical variation is a possible cause
+  hi: different byte hash; cross-platform numerical variation is a possible cause
+  raw_K: different byte hash; cross-platform numerical variation is a possible cause
+  raw_lo: different byte hash; cross-platform numerical variation is a possible cause
+  raw_hi: different byte hash; cross-platform numerical variation is a possible cause
+The reference array values are not included in the saved report, so elementwise differences cannot be quantified from hashes.
+Absolute difference between old and new alm_polished median objectives: 7.633e-17.
+Future local refinements should reuse exactly the same local arrays for baseline and candidate.
+
+Method                     Old pass  New pass   Old median    New median   New / old
+------------------------------------------------------------------------------------------
+alm_polished               3/3      3/3          0.046565      0.710782      15.264x
+alm_fast_tuned             3/3      3/3          0.049643      0.855943      17.242x
+active_set                 3/3      3/3          0.066362      1.021202      15.388x
+mosek_fast                 3/3      3/3          0.117684      1.356840      11.529x
+mosek_reference            3/3      3/3          0.133988      1.415395      10.564x
+alm_fast                   3/3      3/3          0.088286      1.656421      18.762x
+alm_original               3/3      3/3          0.432521      7.150919      16.533x
+ipm                        0/3      0/3          0.115707      2.005141      17.329x *
+nested_fast_prox           0/3      0/3         15.000215     15.001143       1.000x *
+newton_krylov              0/3      0/3         15.000392     15.001606       1.000x *
+nested_fast                0/3      0/3         15.000134     15.001678       1.000x *
+nested_fast_outer          0/3      0/3         15.000267     15.001847       1.000x *
+adaptive_pdhg              3/3      0/3          3.896847     15.001959       3.850x *
+nested_fast_inexact        0/3      0/3         15.000277     15.002692       1.000x *
+pdhg                       3/3      0/3          3.237938     15.003030       4.634x *
+newton_krylov_inexact      0/3      0/3         15.000208     15.003878       1.000x *
+newton_dense               0/3      0/3         15.000197     15.005990       1.000x *
+alm_apg                    3/3      0/3          8.003818     15.010815       1.875x *
+
+* Ratios involving unsuccessful attempts are not time-to-solution slowdowns.
+Changes in runtime combine hardware, operating system, BLAS, dependency versions, and run noise.
+They cannot be attributed solely to CPU speed.
+
+Validation: python -m unittest discover -s tests -v; all 5 tests passed (7.172 s).
+No solver implementations or tuning policies were changed.
+
+Reproduce
+
+$env:MOSEKLM_LICENSE_FILE = (Resolve-Path -LiteralPath "..\mosek.lic").Path
+python -m sparsefolio --case CASE.json --all --with-mosek --repeats 3 --limit 15 --tol 1e-6 --feas-tol 1e-7 --output JIT-results-local-new-run.json
+
+JIT-results-local-2026-10-18.json contains all raw metrics, dependency versions, data fingerprints, and package-source hashes.
+The original RESULTS.txt and JIT-results.json are preserved.
