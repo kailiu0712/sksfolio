@@ -31,7 +31,7 @@ def main():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--methods", nargs="+", choices=CUSTOM_METHODS+MOSEK_METHODS,
                         default=["alm_polished"])
-    parser.add_argument("--all", action="store_true", help="Run all 16 custom variants")
+    parser.add_argument("--all", action="store_true", help="Run all 17 custom variants")
     parser.add_argument("--with-mosek", action="store_true", help="Also run both licensed MOSEK settings")
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--limit", type=float, default=15.0)

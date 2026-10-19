@@ -33,11 +33,12 @@ class PackageChecks(unittest.TestCase):
     def test_all_modules_import_without_mosek(self):
         for name in ("first_order", "newton", "alm_newton", "reference",
                      "improvements.alm_fast", "improvements.alm_polished",
+                     "improvements.alm_preconditioned",
                      "improvements.active_set", "improvements.nested_fast",
                      "improvements.inner_dual_fast", "improvements.ipm"):
             importlib.import_module("sparsefolio."+name)
-        self.assertEqual(len(sparsefolio.methods()), 16)
-        self.assertEqual(len(sparsefolio.methods(include_mosek=True)), 18)
+        self.assertEqual(len(sparsefolio.methods()), 17)
+        self.assertEqual(len(sparsefolio.methods(include_mosek=True)), 19)
 
     def test_recommended_solver_certificate(self):
         sparsefolio.warmup()

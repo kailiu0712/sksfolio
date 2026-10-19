@@ -1,4 +1,4 @@
-"""One entry point for all 16 custom variants and two MOSEK settings."""
+"""One entry point for all 17 custom variants and two MOSEK settings."""
 from importlib import import_module
 from time import perf_counter
 
@@ -6,6 +6,7 @@ CUSTOM_METHODS = (
     "pdhg", "adaptive_pdhg", "alm_apg",
     "newton_dense", "newton_krylov", "newton_krylov_inexact",
     "alm_original", "alm_fast", "alm_fast_tuned", "active_set", "alm_polished",
+    "alm_preconditioned",
     "nested_fast_prox", "nested_fast_outer", "nested_fast", "nested_fast_inexact",
     "ipm",
 )

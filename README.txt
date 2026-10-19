@@ -1,6 +1,6 @@
 Sparse portfolio solvers
 
-This small package includes all 16 custom solver variants, two optional MOSEK configurations, and the exact synthetic testcase generator used in the experiments.
+This small package includes all 17 custom solver variants, two optional MOSEK configurations, and the exact synthetic testcase generator used in the experiments.
 CASE.json selects 500 assets, a selection budget of 10, 200 additional tight exposure rows, and seed zero.
 The generator also supports the larger tested cases without shipping large matrix files.
 
@@ -80,6 +80,7 @@ Available methods
     alm_fast_tuned        Structured ALM with the fixed revised policy
     active_set            Independent warmup and joint primal-dual KKT polishing
     alm_polished          Recommended fixed ALM warmup plus KKT polishing
+    alm_preconditioned    Same ALM polishing with clipped exposure-column scaling
     nested_fast_prox      Faster scalar prox inside the original nested method
     nested_fast_outer     Adds structured outer Newton solves
     nested_fast           Adds structured inner dual solves

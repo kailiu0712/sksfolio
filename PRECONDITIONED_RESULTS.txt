@@ -1,0 +1,38 @@
+Column-preconditioned ALM versus the tagged alm_polished baseline
+Benchmark: 2026-10-19, same local machine and process for both methods.
+
+Each case uses seed 0, 200 tight exposure rows, n in {500, 2000},
+k in {10, 200}, a 15-second cooperative limit, relative-gap tolerance
+1e-6, and original-unit feasibility tolerance 1e-7. Numba is warmed
+before timing; the same generated Problem is reused for both methods.
+The order of the two methods is shuffled within each of 20 repeats.
+One BLAS thread is used. Times include preprocessing and final public-API
+evaluation; problem generation and JIT compilation are excluded.
+
+ n     k    baseline median   preconditioned median   reduction   paired wins
+ 500   10      0.306 s              0.276 s             9.8%       13/20
+ 500  200      0.483 s              0.411 s            14.9%       18/20
+2000   10      0.725 s              0.653 s             9.9%       20/20
+2000  200      1.336 s              0.980 s            26.6%       20/20
+
+All 20 baseline and 20 preconditioned attempts in every case passed
+the identical independent original-coordinate certificate. The table
+shows per-method medians, so its reduction is 1 minus the ratio of
+those two medians. Individual attempts can be slower due to timing noise.
+The improvement applies to these four standardized instances; it is
+not a claim for every possible portfolio instance.
+
+Reproduce with:
+    python benchmark_preconditioned.py --repeats 20 --output PRECONDITIONED_RESULTS.jsonl
+
+The raw attempts and protocol are in PRECONDITIONED_RESULTS.jsonl.
+The unchanged pre-improvement checkpoint is Git tag
+baseline-almnewton-2026-10-18; the original package benchmark is
+RESULTS.txt and this machine's baseline run is RESULTS-local-2026-10-18.txt.
+
+Method: let q_i = sum_j K[j,i]^2 and D_i = clip(sqrt(median(q)/q_i), 0.5, 2).
+Set x = D w. Transform B to B D, c to D c, gamma to D^2 gamma,
+u to D^-1 u, K to K D, and raw_K to raw_K D. Bounds and exposure
+multipliers are unchanged. Run the existing alm_polished solver on w;
+map its answer back with x = D w and assess it in the original model.
+Implementation: sparsefolio/improvements/alm_preconditioned.py.
